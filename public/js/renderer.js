@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════
-// NEON FRACTURE — RENDERER (FIXED)
+// NEON FRACTURE — RENDERER (FINAL STABLE)
 // ═══════════════════════════════════════════════════════
 
 const Renderer = (() => {
@@ -7,7 +7,7 @@ const Renderer = (() => {
 
   function init() {
     if (!window.THREE) {
-      console.error('THREE.js not loaded');
+      console.error('[Renderer] THREE.js not loaded');
       return;
     }
 
@@ -21,18 +21,31 @@ const Renderer = (() => {
     );
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
     document.body.appendChild(renderer.domElement);
 
     camera.position.z = 5;
 
+    window.addEventListener('resize', onResize);
+
     animate();
+  }
+
+  function onResize() {
+    if (!camera || !renderer) return;
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
   function animate() {
     requestAnimationFrame(animate);
-    if (renderer) renderer.render(scene, camera);
+    if (renderer && scene && camera) {
+      renderer.render(scene, camera);
+    }
   }
 
   return {
