@@ -1,239 +1,133 @@
 # ⚡ NEON FRACTURE: QUANTUM ARENA
 
-> A AAA-quality futuristic multiplayer browser game built with Three.js, Socket.io, and Node.js.
+A fast-paced, browser-based multiplayer arena shooter set in a neon cyber world.
 
-```
-╔══════════════════════════════════════════════════════════╗
-║  NEON FRACTURE: QUANTUM ARENA  —  v1.0.0 QUANTUM BUILD  ║
-╚══════════════════════════════════════════════════════════╝
-```
-
-## 🎮 Game Overview
-
-**Neon Fracture** is a real-time competitive multiplayer arena shooter running entirely in the browser. 
-Two teams fight over energy cores and eliminate enemies in a glowing cyber arena.
-
-### Win Conditions
-- Capture 5 energy cores scattered across the arena (+10 pts each)
-- Eliminate enemy players (+5 pts per kill)
-- **First team to 100 points wins**, or highest score when time runs out (5 min)
+Built as a real-time game that runs entirely in the browser — no installs, just jump in and play.
 
 ---
 
-## 📁 Project Structure
+## 🎮 What it is
 
-```
-neon-fracture/
-├── server/
-│   └── index.js          # Node.js + Socket.io game server
-├── public/
-│   ├── index.html         # Main HTML shell
-│   ├── css/
-│   │   └── style.css      # Full AAA-quality stylesheet
-│   └── js/
-│       ├── audio.js       # Web Audio API synth engine
-│       ├── renderer.js    # Three.js 3D renderer
-│       ├── game.js        # Client-side game logic + HUD
-│       ├── network.js     # Socket.io client layer
-│       ├── ui.js          # Screen & UI manager
-│       ├── input.js       # Keyboard + mouse input
-│       ├── mobile.js      # Touch + virtual joystick
-│       ├── settings.js    # Settings persistence
-│       └── main.js        # Entry point + home background
-├── package.json
-├── render.yaml            # Render.com deployment config
-└── README.md
-```
+Neon Fracture is a competitive multiplayer game where two teams fight inside a futuristic arena.  
+Players capture energy cores, eliminate opponents, and use abilities to control the match.
+
+It’s designed to feel responsive, visually intense, and lightweight enough to run directly in the browser.
 
 ---
 
-## 🚀 Local Setup
+## 🧠 Core Gameplay
 
-### Prerequisites
-- Node.js 18+
-- npm
+- Two teams: **Alpha vs Omega**
+- Matches last **5 minutes**
+- First team to **100 points wins**
 
-### Install & Run
+### How you score:
+- Capture energy cores → +10 points  
+- Eliminate enemies → +5 points  
 
-```bash
-# Clone or extract the project
-cd neon-fracture
-
-# Install dependencies
-npm install
-
-# Start the server
-npm start
-
-# Open in browser
-open http://localhost:3000
-```
-
-For development with auto-reload:
-```bash
-npm run dev
-```
-
----
-
-## 🌐 Deployment
-
-### Option 1: Render.com (Recommended — Free)
-
-1. Push code to a GitHub repository
-2. Go to [render.com](https://render.com) → New → Web Service
-3. Connect your repo
-4. Settings:
-   - **Build Command:** `npm install`
-   - **Start Command:** `npm start`
-   - **Environment:** Node
-5. Deploy — your game will be live at `https://your-app.onrender.com`
-
-The `render.yaml` file is pre-configured for one-click deployment.
-
-### Option 2: Railway.app (Free tier)
-
-```bash
-# Install Railway CLI
-npm i -g @railway/cli
-
-# Login and deploy
-railway login
-railway init
-railway up
-```
-
-### Option 3: Fly.io (Free)
-
-```bash
-# Install flyctl
-# https://fly.io/docs/hands-on/install-flyctl/
-
-fly launch
-fly deploy
-```
-
-### Option 4: Heroku
-
-```bash
-heroku create your-neon-fracture
-git push heroku main
-```
-
----
-
-## 🎮 Controls
-
-| Action | Desktop | Mobile |
-|--------|---------|--------|
-| Move | WASD / Arrow Keys | Left joystick |
-| Aim | Mouse | Right side drag |
-| Shoot | Left click / Space | FIRE button |
-| Quantum Dash | Q | ⚡ button |
-| Time Freeze | E | ❄ button |
-| Energy Pulse | R | ◎ button |
-| Shield | F | 🛡 button |
-| Scoreboard | TAB | — |
+If time runs out, the team with the higher score wins.
 
 ---
 
 ## ⚡ Abilities
 
-| Ability | Key | Energy Cost | Cooldown | Effect |
-|---------|-----|-------------|----------|--------|
-| Quantum Dash | Q | 20 | 3s | Teleport forward 8 units |
-| Time Freeze | E | 35 | 8s | Freeze all nearby enemies for 3s |
-| Energy Pulse | R | 30 | 5s | 8-directional bullet burst |
-| Shield Barrier | F | 25 | 6s | Block 80% damage for 4s |
+Each player has access to a small set of abilities:
+
+- **Dash** → quick forward teleport  
+- **Freeze** → temporarily disable nearby enemies  
+- **Pulse** → radial burst attack  
+- **Shield** → reduce incoming damage  
+
+Abilities use energy and have cooldowns, so timing matters.
 
 ---
 
-## 🏗️ Architecture
+## 🎮 Controls
 
-```
-Client (Browser)                    Server (Node.js)
-─────────────────                   ─────────────────
-Three.js Renderer                   Socket.io Server
-├── 3D Arena (WebGL)                ├── Room Manager
-├── Player Meshes                   ├── Game Tick (20Hz)
-├── Particle System                 ├── Physics (bullets)
-└── Post-processing                 ├── Collision Detection
-                                    ├── Score Tracking
-Web Audio API                       └── State Broadcast
-├── Synth SFX
-└── Procedural Music
+**Desktop**
+- Move → WASD / Arrow keys  
+- Aim → Mouse  
+- Shoot → Click / Space  
+- Abilities → Q / E / R / F  
+- Scoreboard → TAB  
 
-Socket.io Client ◄──────────────── Socket.io Server
-├── playerInput (50Hz)              ├── gameState (20Hz)
-├── shoot                           ├── playerHit
-├── useAbility                      ├── playerKilled
-└── createRoom/joinRoom             └── coreCaptured
-```
+**Mobile**
+- Left joystick → movement  
+- Right side → aim  
+- On-screen buttons → abilities  
 
 ---
 
-## 🔧 Configuration
+## 🧩 Tech Stack
 
-Edit `server/index.js` to tune:
+### Frontend
+- Three.js (WebGL rendering)  
+- Web Audio API (sound + effects)  
+- Vanilla JavaScript  
 
-```js
-const TICK_RATE = 20;        // Server tick rate (Hz)
-const MAP_SIZE = 80;          // Arena size (units)
-const PLAYER_SPEED = 0.25;    // Movement speed
-const BULLET_SPEED = 1.2;     // Projectile speed
-const ENERGY_REGEN = 0.15;    // Energy regen per tick
-const HEALTH_MAX = 100;       // Max health
-const ENERGY_MAX = 100;       // Max energy
-```
+### Backend
+- Node.js + Express  
+- Socket.io (real-time communication)  
 
 ---
 
-## 🔮 Future Upgrade Suggestions
+## ⚙️ How it works (high-level)
 
-### Gameplay
-- [ ] **Power-ups** — health packs, speed boosts, damage amplifiers scattered on map
-- [ ] **Multiple game modes** — Deathmatch, King of the Hill, Capture the Flag
-- [ ] **Character classes** — Tank, Assassin, Support with unique ability sets
-- [ ] **Ranked matchmaking** — ELO-based skill matching
-- [ ] **Persistent accounts** — JWT auth, leaderboards, cosmetics
+- The server runs the game loop (tick-based simulation)  
+- Clients send input (movement, shooting, abilities)  
+- Server processes everything and sends back game state  
+- Clients render what the server tells them  
 
-### Visual
-- [ ] **Post-processing** — Bloom, chromatic aberration, motion blur (Three.js EffectComposer)
-- [ ] **Procedural map generation** — Different arena layouts each match
-- [ ] **Animated skybox** — Moving nebula / cyber-city background
-- [ ] **Advanced particles** — GPU particles for large-scale effects
-- [ ] **Weapon skins** — Cosmetic ability visual variants
+Client (browser) → input → Server  
+Server → state → Client  
 
-### Technical
-- [ ] **Client-side prediction** — Smoother local movement
-- [ ] **Lag compensation** — Hit registration on server at time of shot
-- [ ] **WebRTC voice chat** — Team communication
-- [ ] **Replay system** — Record and play back matches
-- [ ] **Analytics** — Heatmaps, balance metrics
-
-### Social
-- [ ] **Friends system** — Invite links, private lobbies
-- [ ] **Spectator mode** — Watch matches in progress
-- [ ] **Tournament brackets** — Organized competitive play
-- [ ] **Clan system** — Teams with persistent stats
+This keeps gameplay consistent across all players.
 
 ---
 
-## 📊 Performance Targets
+## 📁 Project Structure
 
-| Device | FPS Target | Quality |
-|--------|-----------|---------|
-| High-end desktop | 60 FPS | High |
-| Mid-range laptop | 60 FPS | Medium |
-| Mobile (flagship) | 45 FPS | Low |
-| Low-end mobile | 30 FPS | Low |
+/public → frontend (client)  
+  /js  
+    game.js  
+    network.js  
+    renderer.js  
+    ui.js  
+    main.js  
+  /css  
+    style.css  
+  index.html  
+
+/server  
+  index.js → main game server  
+
+package.json  
 
 ---
 
-## 📄 License
+## 🧪 What’s interesting here
 
-MIT License — Free for personal and commercial use.
+- Real-time multiplayer in a pure browser environment  
+- No frameworks — everything is written from scratch  
+- Server-authoritative game logic  
+- Lightweight but visually styled (neon / cyber theme)  
 
 ---
 
-*Built with ❤️ and neon by the Quantum Arena team*
+## 🧱 Current State
+
+The core loop is functional:
+- Room creation / joining  
+- Real-time sync  
+- Abilities + combat  
+- Score system  
+
+Still evolving — more polish and features can be added.
+
+---
+
+## 📌 Notes
+
+This is more of a systems + gameplay project than a production game.  
+Focus is on networking, real-time sync, and game mechanics rather than assets or monetization.
+
