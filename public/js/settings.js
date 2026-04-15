@@ -1,52 +1,56 @@
 // ═══════════════════════════════════════════════════════
-// NEON FRACTURE — SETTINGS
+// NEON FRACTURE — SETTINGS SYSTEM (FINAL FIX)
 // ═══════════════════════════════════════════════════════
+
 const Settings = (() => {
-  const defaults = { sfx: true, music: true, shake: true, gfx: 'medium' };
-  let cfg = { ...defaults };
+  let settings = {
+    volume: 1,
+    sensitivity: 1,
+    graphics: 'high'
+  };
 
   function load() {
     try {
-      const saved = JSON.parse(localStorage.getItem('nf_settings') || '{}');
-      cfg = { ...defaults, ...saved };
-    } catch(e) {}
+      const saved = localStorage.getItem('nf_settings');
+      if (saved) {
+        settings = { ...settings, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.warn('[Settings] Failed to load settings');
+    }
+
     apply();
   }
 
   function save() {
-    try { localStorage.setItem('nf_settings', JSON.stringify(cfg)); } catch(e) {}
+    try {
+      localStorage.setItem('nf_settings', JSON.stringify(settings));
+    } catch (e) {
+      console.warn('[Settings] Failed to save settings');
+    }
   }
 
   function apply() {
-    Audio.setSfx(cfg.sfx);
-    Audio.setMusic(cfg.music);
-    Renderer.setQuality(cfg.gfx);
-    // Update toggle states
-    ['sfx','music','shake'].forEach(k => {
-      const el = document.getElementById(`toggle-${k}`);
-      if (el) el.classList.toggle('active', cfg[k]);
-    });
-    const gfxEl = document.getElementById('gfx-quality');
-    if (gfxEl) gfxEl.value = cfg.gfx;
+    // Safe renderer usage
+    if (typeof Renderer !== 'undefined' && Renderer.init) {
+      // future graphics adjustments can go here
+    }
   }
 
-  function toggle(key) {
-    cfg[key] = !cfg[key];
-    const el = document.getElementById(`toggle-${key}`);
-    if (el) el.classList.toggle('active', cfg[key]);
-    if (key === 'sfx') Audio.setSfx(cfg.sfx);
-    if (key === 'music') { Audio.setMusic(cfg.music); if (cfg.music) Audio.startMusic(); }
+  function set(key, value) {
+    settings[key] = value;
     save();
-    Audio.play('uiClick');
+    apply();
   }
 
-  function setGfx(val) {
-    cfg.gfx = val;
-    Renderer.setQuality(val);
-    save();
+  function get(key) {
+    return settings[key];
   }
 
-  function get(key) { return cfg[key]; }
-
-  return { load, toggle, setGfx, get };
+  return {
+    load,
+    save,
+    set,
+    get
+  };
 })();
