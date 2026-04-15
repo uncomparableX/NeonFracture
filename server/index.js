@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════════════════════
-// NEON FRACTURE — SERVER v5 (FINAL STABLE)
-// Works with Render + Socket.io + Lobby + Start Game
+// NEON FRACTURE — SERVER FINAL (LOBBY + GAME LOOP)
 // ═══════════════════════════════════════════════════════
 
 const express = require('express');
@@ -11,78 +10,64 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 
-// ✅ SOCKET.IO (Render-safe config)
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
   transports: ["websocket", "polling"]
 });
 
-// ✅ Serve frontend
+// Serve frontend
 app.use(express.static(path.join(__dirname, '../public')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// ═══════════════════════════════════════════════════════
 // STATE
-// ═══════════════════════════════════════════════════════
 const rooms = new Map();
 const playerRooms = new Map();
 
-// ═══════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════
-
-// Create player
+// PLAYER
 function createPlayer(id, name, team) {
   return {
     id,
     name: (name || 'OPERATOR').substring(0, 16),
-    team: team || 'A'
+    team: team || 'A',
+    x: Math.random() * 10,
+    z: Math.random() * 10
   };
 }
 
-// Create room
-function createRoom(hostId, hostName, roomName) {
+// ROOM
+function createRoom(hostId, roomName) {
   const id = Math.random().toString(36).substring(2, 8).toUpperCase();
 
   return {
     id,
     name: roomName || `Arena-${id}`,
     host: hostId,
-    players: new Map()
+    players: new Map(),
+    tick: null
   };
 }
 
-// 🔥 BROADCAST LOBBY (CRITICAL)
-function broadcastLobby(room) {
-  const players = Array.from(room.players.values()).map(p => ({
-    id: p.id,
-    name: p.name,
-    team: p.team
-  }));
-
-  io.to(room.id).emit('lobbyUpdate', { players });
+// LOBBY UPDATE
+function updateLobby(room) {
+  io.to(room.id).emit('lobbyUpdate', {
+    players: Array.from(room.players.values())
+  });
 }
 
-// ═══════════════════════════════════════════════════════
-// SOCKET EVENTS
-// ═══════════════════════════════════════════════════════
+// SOCKET
 io.on('connection', (socket) => {
   console.log('✅ Connected:', socket.id);
 
-  // ── CREATE ROOM ─────────────────────────
+  // CREATE
   socket.on('createRoom', ({ playerName, roomName }) => {
-    const room = createRoom(socket.id, playerName, roomName);
+    const room = createRoom(socket.id, roomName);
 
     rooms.set(room.id, room);
     socket.join(room.id);
 
     const player = createPlayer(socket.id, playerName, 'A');
-
     room.players.set(socket.id, player);
     playerRooms.set(socket.id, room.id);
 
@@ -92,21 +77,17 @@ io.on('connection', (socket) => {
       player
     });
 
-    broadcastLobby(room); // 🔥 IMPORTANT
+    updateLobby(room);
   });
 
-  // ── JOIN ROOM ─────────────────────────
+  // JOIN
   socket.on('joinRoom', ({ roomId, playerName, team }) => {
     const room = rooms.get(roomId);
-
-    if (!room) {
-      return socket.emit('error', { msg: 'Room not found' });
-    }
+    if (!room) return socket.emit('error', { msg: 'Room not found' });
 
     socket.join(room.id);
 
     const player = createPlayer(socket.id, playerName, team);
-
     room.players.set(socket.id, player);
     playerRooms.set(socket.id, room.id);
 
@@ -116,81 +97,70 @@ io.on('connection', (socket) => {
       player
     });
 
-    broadcastLobby(room); // 🔥 IMPORTANT
+    updateLobby(room);
   });
 
-  // ── SWITCH TEAM ─────────────────────────
+  // SWITCH TEAM
   socket.on('switchTeam', () => {
-    const roomId = playerRooms.get(socket.id);
-    if (!roomId) return;
-
-    const room = rooms.get(roomId);
+    const room = rooms.get(playerRooms.get(socket.id));
     if (!room) return;
 
-    const player = room.players.get(socket.id);
-    if (!player) return;
+    const p = room.players.get(socket.id);
+    if (!p) return;
 
-    player.team = player.team === 'A' ? 'B' : 'A';
-
-    broadcastLobby(room);
+    p.team = p.team === 'A' ? 'B' : 'A';
+    updateLobby(room);
   });
 
-  // ── START GAME (FINAL FIX) ─────────────
+  // START GAME
   socket.on('startGame', () => {
-    const roomId = playerRooms.get(socket.id);
-    if (!roomId) return;
-
-    const room = rooms.get(roomId);
+    const room = rooms.get(playerRooms.get(socket.id));
     if (!room) return;
 
-    // Only host can start
-    if (room.host !== socket.id) {
+    if (room.host !== socket.id)
       return socket.emit('error', { msg: 'Only host can start' });
-    }
 
-    // Need at least 2 players
-    if (room.players.size < 2) {
-      return socket.emit('error', { msg: 'Need at least 2 players' });
-    }
-
-    console.log('🚀 GAME START:', room.id);
+    if (room.players.size < 2)
+      return socket.emit('error', { msg: 'Need 2 players' });
 
     io.to(room.id).emit('countdown', { count: 3 });
 
     setTimeout(() => {
       io.to(room.id).emit('gameStart');
+
+      // GAME LOOP
+      room.tick = setInterval(() => {
+        const state = {
+          players: Array.from(room.players.values())
+        };
+
+        io.to(room.id).emit('gameState', state);
+      }, 50);
+
     }, 3000);
   });
 
-  // ── DISCONNECT ─────────────────────────
+  // DISCONNECT
   socket.on('disconnect', () => {
-    console.log('❌ Disconnected:', socket.id);
-
-    const roomId = playerRooms.get(socket.id);
-    if (!roomId) return;
-
-    const room = rooms.get(roomId);
+    const room = rooms.get(playerRooms.get(socket.id));
     if (!room) return;
 
     room.players.delete(socket.id);
     playerRooms.delete(socket.id);
 
-    broadcastLobby(room);
+    if (room.players.size === 0) {
+      clearInterval(room.tick);
+      rooms.delete(room.id);
+    } else {
+      updateLobby(room);
+    }
   });
-
 });
 
-// ═══════════════════════════════════════════════════════
-// SERVER START (RENDER SAFE)
-// ═══════════════════════════════════════════════════════
-
-// Prevent timeout (important for Render)
+// START
 server.setTimeout(0);
-
-// Use Render PORT
 const PORT = process.env.PORT || 10000;
 
-// Bind to 0.0.0.0 (CRITICAL for Render)
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on ${PORT}`);
 });
