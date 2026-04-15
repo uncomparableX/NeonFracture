@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════
-// NEON FRACTURE — NETWORK v2
+// NEON FRACTURE — NETWORK v3 (FINAL FIXED)
 // ═══════════════════════════════════════════════════════
 const Network = (() => {
   let socket = null;
@@ -11,24 +11,38 @@ const Network = (() => {
   let reconnectAttempts = 0;
 
   function connect() {
-    socket = io(window.location.origin, {
+    // ✅ FIX: DO NOT pass window.location.origin
+    socket = io({
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5
     });
 
+    // ── CONNECTION ─────────────────────────────────────
     socket.on('connect', () => {
       connected = true;
       myPlayerId = socket.id;
       reconnectAttempts = 0;
-      console.log('[NET] Connected:', socket.id);
+
+      console.log('✅ CONNECTED TO SERVER:', socket.id);
+      UI.toastMessage('Connected to server', 2000);
     });
 
     socket.on('disconnect', (reason) => {
       connected = false;
-      console.log('[NET] Disconnected:', reason);
-      if (Game.isRunning()) UI.toastMessage('Connection lost — reconnecting...', 4000);
+      console.log('❌ DISCONNECTED:', reason);
+
+      UI.toastMessage('Connection lost — reconnecting...', 4000);
+    });
+
+    socket.on('connect_error', (err) => {
+      reconnectAttempts++;
+      console.error('❌ CONNECTION ERROR:', err.message);
+
+      if (reconnectAttempts === 1) {
+        UI.showError('Cannot reach server');
+      }
     });
 
     socket.on('reconnect', () => {
@@ -36,28 +50,27 @@ const Network = (() => {
       UI.toastMessage('Reconnected!');
     });
 
-    socket.on('connect_error', (e) => {
-      reconnectAttempts++;
-      if (reconnectAttempts === 1) UI.showError('Cannot reach server — check your connection');
-    });
-
     socket.on('error', ({ msg }) => UI.showError(msg));
 
     // ── LOBBY ──────────────────────────────────────────
     socket.on('roomCreated', ({ roomId, roomName, player }) => {
-      currentRoomId = roomId; isHost = true;
+      currentRoomId = roomId;
+      isHost = true;
       myPlayerId = player.id;
+
       UI.showRoomScreen(roomId, roomName, true);
     });
 
     socket.on('roomJoined', ({ roomId, roomName, player }) => {
-      currentRoomId = roomId; isHost = false;
+      currentRoomId = roomId;
+      isHost = false;
       myPlayerId = player.id;
+
       UI.showRoomScreen(roomId, roomName, false);
     });
 
     socket.on('lobbyUpdate', data => UI.updateLobby(data));
-    socket.on('playerLeft', ({ playerId }) => UI.toastMessage('A player disconnected'));
+    socket.on('playerLeft', () => UI.toastMessage('A player disconnected'));
 
     // ── GAME FLOW ──────────────────────────────────────
     socket.on('countdown', ({ count }) => {
@@ -75,7 +88,7 @@ const Network = (() => {
     socket.on('playerHit', data => Game.onPlayerHit(data));
     socket.on('playerKilled', data => Game.onPlayerKilled(data));
 
-    socket.on('playerRespawn', ({ playerId, x, z }) => {
+    socket.on('playerRespawn', ({ playerId }) => {
       if (playerId === myPlayerId) {
         Game.resetCooldowns();
         Game.announce('BACK IN THE FIGHT', 'green');
@@ -83,18 +96,12 @@ const Network = (() => {
     });
 
     socket.on('coreCaptured', data => Game.onCoreCaptured(data));
-    socket.on('coreRespawned', ({ coreId }) => {
-      // Core respawn handled by server state broadcast
-    });
-
     socket.on('abilityUsed', data => Game.onAbilityUsed(data));
 
-    socket.on('powerupSpawned', () => {
-      // handled in game state
-    });
-
     socket.on('powerupPickup', data => {
-      if (data.playerId === myPlayerId) Game.onPowerupPickup(data);
+      if (data.playerId === myPlayerId) {
+        Game.onPowerupPickup(data);
+      }
     });
 
     socket.on('announcer', ({ text, style }) => {
@@ -107,41 +114,43 @@ const Network = (() => {
     });
   }
 
-  // ── EMIT ───────────────────────────────────────────────
+  // ── EMIT ─────────────────────────────────────────────
   function createRoom() {
-    const name     = document.getElementById('create-name')?.value.trim() || 'OPERATOR';
+    const name = document.getElementById('create-name')?.value.trim() || 'OPERATOR';
     const roomName = document.getElementById('create-room-name')?.value.trim() || '';
-    if (!name) return UI.showError('Enter your callsign');
+
     if (!connected) return UI.showError('Not connected to server');
+
     Audio.play('uiClick');
     socket.emit('createRoom', { playerName: name, roomName });
   }
 
   function joinRoom() {
-    const name   = document.getElementById('join-name')?.value.trim() || 'OPERATOR';
+    const name = document.getElementById('join-name')?.value.trim() || 'OPERATOR';
     const roomId = document.getElementById('join-room-id')?.value.trim().toUpperCase();
-    if (!name)   return UI.showError('Enter your callsign');
+
     if (!roomId) return UI.showError('Enter a room code');
     if (!connected) return UI.showError('Not connected to server');
+
     Audio.play('uiClick');
     socket.emit('joinRoom', { roomId, playerName: name, team: pendingTeam });
   }
 
   function switchTeam() { socket?.emit('switchTeam'); }
-
-  function startGame() {
-    if (!isHost) return;
-    Audio.play('uiClick');
-    socket?.emit('startGame');
-  }
+  function startGame() { if (isHost) socket?.emit('startGame'); }
 
   function sendInput(input) { socket?.volatile.emit('playerInput', input); }
   function shoot(dx, dz) { socket?.emit('shoot', { dx, dz }); }
   function useAbility(ability) { socket?.emit('useAbility', { ability }); }
 
   function leaveRoom() {
-    if (socket) { socket.disconnect(); }
-    setTimeout(() => { socket = null; connected = false; connect(); UI.showScreen('screen-home'); }, 150);
+    socket?.disconnect();
+    setTimeout(() => {
+      socket = null;
+      connected = false;
+      connect();
+      UI.showScreen('screen-home');
+    }, 150);
   }
 
   function returnToLobby() {
@@ -150,12 +159,18 @@ const Network = (() => {
   }
 
   function setPendingTeam(t) { pendingTeam = t; }
-  function getMyId() { return myPlayerId; }
-  function isConnected() { return connected; }
 
   return {
-    connect, createRoom, joinRoom, switchTeam, startGame,
-    sendInput, shoot, useAbility, leaveRoom, returnToLobby,
-    setPendingTeam, getMyId, isConnected
+    connect,
+    createRoom,
+    joinRoom,
+    switchTeam,
+    startGame,
+    sendInput,
+    shoot,
+    useAbility,
+    leaveRoom,
+    returnToLobby,
+    setPendingTeam
   };
 })();
