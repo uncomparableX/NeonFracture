@@ -148,8 +148,10 @@ io.on('connection', socket => {
 // ── START ──────────────────────────────
 server.setTimeout(0);
 
-const PORT = process.env.PORT || 3000;
+// Render provides PORT dynamically
+const PORT = process.env.PORT || 10000;
 
-server.listen(PORT, () => {
+// IMPORTANT: bind to 0.0.0.0 for Render
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on ${PORT}`);
 });
