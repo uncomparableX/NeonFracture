@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: neon-fracture-quantum-arena
+    env: node
+
+    buildCommand: npm install
+    startCommand: node server/index.js
+
+    envVars:
+      - key: NODE_ENV
+        value: production
