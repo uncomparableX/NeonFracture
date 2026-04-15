@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════
-// NEON FRACTURE — NETWORK v3 (FINAL FIXED)
+// NEON FRACTURE — NETWORK v4 (FINAL STABLE)
 // ═══════════════════════════════════════════════════════
 const Network = (() => {
   let socket = null;
@@ -11,7 +11,6 @@ const Network = (() => {
   let reconnectAttempts = 0;
 
   function connect() {
-    // ✅ FIX: DO NOT pass window.location.origin
     socket = io({
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -25,15 +24,14 @@ const Network = (() => {
       myPlayerId = socket.id;
       reconnectAttempts = 0;
 
-      console.log('✅ CONNECTED TO SERVER:', socket.id);
-      UI.toastMessage('Connected to server', 2000);
+      console.log('✅ CONNECTED:', socket.id);
+      UI.toastMessage('Connected', 1500);
     });
 
     socket.on('disconnect', (reason) => {
       connected = false;
       console.log('❌ DISCONNECTED:', reason);
-
-      UI.toastMessage('Connection lost — reconnecting...', 4000);
+      UI.toastMessage('Reconnecting...', 3000);
     });
 
     socket.on('connect_error', (err) => {
@@ -41,7 +39,7 @@ const Network = (() => {
       console.error('❌ CONNECTION ERROR:', err.message);
 
       if (reconnectAttempts === 1) {
-        UI.showError('Cannot reach server');
+        UI.showError('Server unreachable');
       }
     });
 
@@ -70,7 +68,6 @@ const Network = (() => {
     });
 
     socket.on('lobbyUpdate', data => UI.updateLobby(data));
-    socket.on('playerLeft', () => UI.toastMessage('A player disconnected'));
 
     // ── GAME FLOW ──────────────────────────────────────
     socket.on('countdown', ({ count }) => {
@@ -84,7 +81,6 @@ const Network = (() => {
     });
 
     socket.on('gameState', state => Game.onGameState(state));
-
     socket.on('playerHit', data => Game.onPlayerHit(data));
     socket.on('playerKilled', data => Game.onPlayerKilled(data));
 
@@ -119,9 +115,8 @@ const Network = (() => {
     const name = document.getElementById('create-name')?.value.trim() || 'OPERATOR';
     const roomName = document.getElementById('create-room-name')?.value.trim() || '';
 
-    if (!connected) return UI.showError('Not connected to server');
+    if (!connected) return UI.showError('Not connected');
 
-    Audio.play('uiClick');
     socket.emit('createRoom', { playerName: name, roomName });
   }
 
@@ -129,10 +124,9 @@ const Network = (() => {
     const name = document.getElementById('join-name')?.value.trim() || 'OPERATOR';
     const roomId = document.getElementById('join-room-id')?.value.trim().toUpperCase();
 
-    if (!roomId) return UI.showError('Enter a room code');
-    if (!connected) return UI.showError('Not connected to server');
+    if (!roomId) return UI.showError('Enter room code');
+    if (!connected) return UI.showError('Not connected');
 
-    Audio.play('uiClick');
     socket.emit('joinRoom', { roomId, playerName: name, team: pendingTeam });
   }
 
@@ -160,6 +154,8 @@ const Network = (() => {
 
   function setPendingTeam(t) { pendingTeam = t; }
 
+  function isConnected() { return connected; } // 🔥 FIX
+
   return {
     connect,
     createRoom,
@@ -171,6 +167,7 @@ const Network = (() => {
     useAbility,
     leaveRoom,
     returnToLobby,
-    setPendingTeam
+    setPendingTeam,
+    isConnected
   };
 })();
