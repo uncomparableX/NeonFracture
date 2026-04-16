@@ -45,33 +45,26 @@ const UI = (() => {
   // ─────────────────────────────────────────────────────
   // 🔥 LOBBY UPDATE (FINAL FIXED)
   // ─────────────────────────────────────────────────────
-  function updateLobby(data) {
-    const elA = document.getElementById('team-a-list');
-    const elB = document.getElementById('team-b-list');
+function updateLobby({ players }) {
+  const teamA = document.getElementById('team-a-list');
+  const teamB = document.getElementById('team-b-list');
 
-    if (!elA || !elB) return;
+  if (!teamA || !teamB) return;
 
-    elA.innerHTML = '';
-    elB.innerHTML = '';
+  teamA.innerHTML = '';
+  teamB.innerHTML = '';
 
-    if (!data || !data.players) return;
+  const myId = Network.getMyId();
 
-    const myId = Network.getMyId();
+  players.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'player-item';
+    el.textContent = p.name + (p.id === myId ? ' (YOU)' : '');
 
-    data.players.forEach(p => {
-      const el = document.createElement('div');
-      el.className = `player-entry ${p.team === 'A' ? 'team-a' : 'team-b'}`;
-
-      let tags = '';
-      if (p.id === data.host) tags += ' 👑 HOST';
-      if (p.id === myId) tags += ' (YOU)';
-
-      el.innerHTML = `<span class="pe-name">${p.name}${tags}</span>`;
-
-      if (p.team === 'A') elA.appendChild(el);
-      else elB.appendChild(el);
-    });
-  }
+    if (p.team === 'A') teamA.appendChild(el);
+    else teamB.appendChild(el);
+  });
+}
 
   // ─────────────────────────────────────────────────────
   // COUNTDOWN
