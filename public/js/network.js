@@ -1,6 +1,7 @@
 const Network = (() => {
   let socket = null;
   let connected = false;
+  let myId = null;
   let isHost = false;
   let pendingTeam = 'A';
 
@@ -12,7 +13,8 @@ const Network = (() => {
 
     socket.on('connect', () => {
       connected = true;
-      console.log('✅ Connected');
+      myId = socket.id;
+      console.log('✅ Connected:', myId);
       UI.toastMessage('Connected');
     });
 
@@ -73,6 +75,8 @@ const Network = (() => {
 
   function isConnected() { return connected; }
 
+  function getMyId() { return myId; } // 🔥 FIX
+
   return {
     connect,
     createRoom,
@@ -80,6 +84,7 @@ const Network = (() => {
     startGame,
     switchTeam,
     setPendingTeam,
-    isConnected
+    isConnected,
+    getMyId // 🔥 FIX
   };
 })();
