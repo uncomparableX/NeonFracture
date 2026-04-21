@@ -49,11 +49,11 @@ const Renderer = (() => {
     _renderer.shadowMap.enabled  = quality === 'high';
     _renderer.shadowMap.type     = THREE.PCFSoftShadowMap;
     _renderer.toneMapping        = THREE.ACESFilmicToneMapping;
-    _renderer.toneMappingExposure = 1.6;
+    _renderer.toneMappingExposure = 2.0; // brighter overall scene
     try { _renderer.outputColorSpace = THREE.SRGBColorSpace; } catch(e) {}
 
     _scene = new THREE.Scene();
-    _scene.fog = new THREE.Fog(0x000510, 55, 130);
+    _scene.fog = new THREE.Fog(0x04081a, 70, 160); // pushed back — more arena visible
 
     _camera = new THREE.PerspectiveCamera(60, w / h, 0.1, 500);
     _camera.position.set(0, 24, 28);
@@ -102,12 +102,20 @@ const Renderer = (() => {
 
   // Sky dome — deep space with nebula colours
   function _buildSkyDome() {
+    // Use vertex colours to fake a top-to-horizon gradient — zero shader cost
     const geo = new THREE.SphereGeometry(280, 24, 16);
-    // Gradient effect via vertex colours
-    const mat = new THREE.MeshBasicMaterial({
-      side: THREE.BackSide,
-      color: 0x000814
-    });
+    const posArr = geo.attributes.position.array;
+    const colours = new Float32Array(posArr.length);
+    for (let i = 0; i < posArr.length; i += 3) {
+      const y = posArr[i + 1]; // positive = up
+      const t = Math.max(0, Math.min(1, (y + 280) / 560)); // 0=bottom,1=top
+      // horizon: deep purple-blue  top: near-black dark-navy
+      colours[i]     = 0.02 + t * 0.01;   // R
+      colours[i + 1] = 0.03 + t * 0.02;   // G
+      colours[i + 2] = 0.10 + t * 0.05;   // B — noticeably blue-purple
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(colours, 3));
+    const mat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true });
     skyDome = new THREE.Mesh(geo, mat);
     _scene.add(skyDome);
   }
@@ -140,51 +148,59 @@ const Renderer = (() => {
     _scene.add(_line([0, 0.05, -45], [0, 0.05, 45],
       new THREE.LineBasicMaterial({ color: 0x00aadd, transparent: true, opacity: 0.5 })));
 
-    // Hex floor tiles — scattered colourful pads
+    // Hex floor tiles — vibrant colour-coded by zone (cheap MeshBasicMaterial = no lighting cost)
     if (quality !== 'low') {
-      const hexColours = [0x001844, 0x002244, 0x001a33, 0x001133];
+      // Palette: centre = purple, left = cyan tint, right = orange tint
+      const getHexColor = (col, row) => {
+        const cx = (col - 5) * 8.0;
+        if (cx < -14) return [0x001e44, 0x0044aa]; // team A zone — blue
+        if (cx >  14) return [0x2a0e00, 0x994400]; // team B zone — orange
+        return [0x16002e, 0x6600cc];                // centre — purple
+      };
       for (let r = 0; r < 7; r++) {
         for (let c = 0; c < 11; c++) {
           const x = (c - 5) * 8.0 + ((r % 2) ? 4.0 : 0);
           const z = (r - 3) * 7.0;
           if (Math.abs(x) > 44 || Math.abs(z) > 44) continue;
+          const [baseCol, emitCol] = getHexColor(c, r);
+          const isAccent = (r + c) % 4 === 0; // every 4th tile is brighter
           const hx = new THREE.Mesh(
-            new THREE.CylinderGeometry(3.6, 3.6, 0.04, 6),
+            new THREE.CylinderGeometry(3.6, 3.6, 0.05, 6),
             new THREE.MeshStandardMaterial({
-              color:             hexColours[Math.floor(Math.random() * hexColours.length)],
-              emissive:          (r + c) % 3 === 0 ? 0x003366 : 0x001133,
-              emissiveIntensity: 0.5,
+              color:             baseCol,
+              emissive:          emitCol,
+              emissiveIntensity: isAccent ? 0.9 : 0.45,
               transparent:       true,
-              opacity:           0.7
+              opacity:           isAccent ? 0.85 : 0.65
             })
           );
-          hx.position.set(x, 0.02, z);
+          hx.position.set(x, 0.025, z);
           _scene.add(hx);
         }
       }
     }
 
-    // Team zone floor tints (large translucent panels)
+    // Team zone floor tints — stronger opacity so zones feel distinct
     const zoneA = new THREE.Mesh(
       new THREE.PlaneGeometry(28, 92),
       new THREE.MeshStandardMaterial({
-        color: 0x00aaff, transparent: true, opacity: 0.04,
-        emissive: 0x0066aa, emissiveIntensity: 0.3
+        color: 0x00aaff, transparent: true, opacity: 0.09,
+        emissive: 0x0088cc, emissiveIntensity: 0.5
       })
     );
     zoneA.rotation.x = -Math.PI / 2;
-    zoneA.position.set(-32, 0.04, 0);
+    zoneA.position.set(-32, 0.06, 0);
     _scene.add(zoneA);
 
     const zoneB = new THREE.Mesh(
       new THREE.PlaneGeometry(28, 92),
       new THREE.MeshStandardMaterial({
-        color: 0xff6b35, transparent: true, opacity: 0.04,
-        emissive: 0xaa4400, emissiveIntensity: 0.3
+        color: 0xff6b35, transparent: true, opacity: 0.09,
+        emissive: 0xff4400, emissiveIntensity: 0.5
       })
     );
     zoneB.rotation.x = -Math.PI / 2;
-    zoneB.position.set(32, 0.04, 0);
+    zoneB.position.set(32, 0.06, 0);
     _scene.add(zoneB);
   }
 
@@ -478,7 +494,7 @@ const Renderer = (() => {
       // Dark body
       const obs = _mesh(
         new THREE.BoxGeometry(c.w, c.h, c.d),
-        { color: 0x000a18, roughness: 0.25, metalness: 0.95, emissive: new THREE.Color(c.c).multiplyScalar(0.1), emissiveIntensity: 1 },
+        { color: 0x050f20, roughness: 0.45, metalness: 0.7,  emissive: new THREE.Color(c.c).multiplyScalar(0.18), emissiveIntensity: 1.2 },
         [c.x, c.h / 2, c.z]
       );
       obs.castShadow = obs.receiveShadow = true;
@@ -501,11 +517,11 @@ const Renderer = (() => {
 
   // ── LIGHTING ──────────────────────────────────────────
   function _buildLighting() {
-    // Very low ambient — dark arena feel
-    _scene.add(new THREE.AmbientLight(0x030a1a, 1.2));
+    // Brighter ambient — characters are visible without looking washed-out
+    _scene.add(new THREE.AmbientLight(0x1a2a50, 2.2));
 
-    // Key directional from above
-    const dir = new THREE.DirectionalLight(0x304060, 0.8);
+    // Key directional — cooler white from above so team colours pop
+    const dir = new THREE.DirectionalLight(0xc8d8ff, 1.2);
     dir.position.set(10, 50, 20);
     dir.castShadow = quality === 'high';
     if (dir.castShadow) {
@@ -516,15 +532,15 @@ const Renderer = (() => {
     }
     _scene.add(dir);
 
-    // Coloured fill lights from sides
-    const sideA = new THREE.DirectionalLight(0x002255, 0.6);
+    // Vivid coloured fills — Team A side cyan, Team B side warm orange
+    const sideA = new THREE.DirectionalLight(0x0055bb, 0.9);
     sideA.position.set(-40, 15, 0); _scene.add(sideA);
-    const sideB = new THREE.DirectionalLight(0x441100, 0.6);
+    const sideB = new THREE.DirectionalLight(0xbb4400, 0.9);
     sideB.position.set(40, 15, 0); _scene.add(sideB);
 
-    // Floor bounce — subtle upward fill
-    const bounce = new THREE.PointLight(0x000833, 2, 60);
-    bounce.position.set(0, -2, 0); _scene.add(bounce);
+    // Upward purple fill — gives floor a nice purple-glow sheen
+    const bounce = new THREE.DirectionalLight(0x330066, 0.6);
+    bounce.position.set(0, -20, 0); _scene.add(bounce);
   }
 
   // Floating particle field in background
@@ -539,12 +555,18 @@ const Renderer = (() => {
       pos[i*3]   = r * Math.sin(phi) * Math.cos(th);
       pos[i*3+1] = Math.random() * 80 + 5;
       pos[i*3+2] = r * Math.sin(phi) * Math.sin(th);
-      // Mostly cyan/blue with occasional orange
-      const bright = 0.4 + Math.random() * 0.6;
-      const orange = Math.random() > 0.8;
-      col[i*3]   = orange ? bright : bright * 0.2;
-      col[i*3+1] = orange ? bright * 0.4 : bright * 0.6;
-      col[i*3+2] = orange ? 0 : bright;
+      // Mix of cyan, purple, orange, white — carnival feel in background
+      const bright = 0.5 + Math.random() * 0.5;
+      const rng = Math.random();
+      if (rng < 0.45) {         // cyan-blue
+        col[i*3]=bright*0.15; col[i*3+1]=bright*0.65; col[i*3+2]=bright;
+      } else if (rng < 0.7) {   // orange-yellow
+        col[i*3]=bright; col[i*3+1]=bright*0.45; col[i*3+2]=0;
+      } else if (rng < 0.85) {  // purple-pink
+        col[i*3]=bright*0.7; col[i*3+1]=0; col[i*3+2]=bright;
+      } else {                  // near-white stars
+        col[i*3]=bright; col[i*3+1]=bright; col[i*3+2]=bright;
+      }
     }
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -579,67 +601,84 @@ const Renderer = (() => {
     const cObj  = new THREE.Color(color);
     const dim   = cObj.clone().multiplyScalar(0.3);
 
-    // Shadow decal
-    group.add(_mesh(
-      new THREE.CircleGeometry(0.75, 12),
-      { color: 0x000000, transparent: true, opacity: 0.5 },
-      [0, 0.015, 0]
-    )).rotation = { x: -Math.PI / 2, y: 0, z: 0 };
-    const shdw = group.children[0];
+    // Blob shadow — elliptical, cheaper than real shadow, good depth cue
+    const shdw = _mesh(
+      new THREE.CircleGeometry(0.95, 10),
+      { color: 0x000000, transparent: true, opacity: 0.55 },
+      [0, 0.018, 0]
+    );
     shdw.rotation.x = -Math.PI / 2;
+    group.add(shdw);
 
-    const legMat = { color: 0x060c18, emissive: dim, emissiveIntensity: 0.6, metalness: 0.85, roughness: 0.3 };
+    // ── Character scale: 1.35× bigger, softer/rounder shapes, warmer body colour ──
+    // Using SphereGeometry for rounder feel (cheap, same poly as capsule)
+    const bodyCol = player.team === 'A' ? 0x0a1e3a : 0x2a0e08; // tinted body per team
+    const legMat  = { color: bodyCol, emissive: dim, emissiveIntensity: 0.9, metalness: 0.5, roughness: 0.6 };
 
-    // Legs
-    [-0.22, 0.22].forEach((s, li) => {
-      const leg = _mesh(new THREE.CylinderGeometry(0.14, 0.12, 0.8, 6), legMat, [s, 0.4, 0]);
+    // Rounded legs — spheres instead of cylinders = cuter silhouette, same cost
+    [-0.28, 0.28].forEach((s, li) => {
+      const leg = _mesh(new THREE.SphereGeometry(0.2, 8, 6), legMat, [s, 0.22, 0]);
+      leg.scale.y = 1.9;  // stretch vertically = pill shape
       leg.userData.isLeg = li;
       group.add(leg);
     });
 
-    // Torso
-    const torso = _mesh(new THREE.BoxGeometry(0.9, 1.0, 0.55),
-      { color: 0x040c1c, emissive: dim, emissiveIntensity: 0.8, metalness: 0.9, roughness: 0.2 },
-      [0, 1.15, 0]);
+    // Torso — slightly rounded box (bigger + rounder = cuter)
+    const torso = _mesh(new THREE.BoxGeometry(1.15, 1.1, 0.72),
+      { color: bodyCol, emissive: dim, emissiveIntensity: 1.0, metalness: 0.5, roughness: 0.5 },
+      [0, 1.22, 0]);
     torso.castShadow = true;
     group.add(torso);
 
-    // Chest neon stripe — team colour
-    group.add(_mesh(new THREE.BoxGeometry(0.92, 0.14, 0.58),
-      { color, emissive: cObj, emissiveIntensity: 4 }, [0, 1.22, 0]));
+    // Chest panel — wide team-colour stripe, very visible
+    group.add(_mesh(new THREE.BoxGeometry(1.16, 0.32, 0.74),
+      { color, emissive: cObj, emissiveIntensity: 3.5 }, [0, 1.28, 0]));
 
-    // Arms
-    [-0.62, 0.62].forEach(s => {
-      group.add(_mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.85, 6),
-        legMat, [s, 1.2, 0.05])).rotation.z = s > 0 ? 0.28 : -0.28;
+    // Rounded shoulder pads — adds cute silhouette bulk
+    [-0.68, 0.68].forEach(s => {
+      group.add(_mesh(new THREE.SphereGeometry(0.25, 7, 6),
+        { color, emissive: cObj, emissiveIntensity: 2 }, [s, 1.5, 0]));
     });
 
-    // Head
-    const head = _mesh(new THREE.BoxGeometry(0.68, 0.6, 0.65),
-      { color: 0x0a1428, emissive: dim, emissiveIntensity: 1.2, metalness: 0.9, roughness: 0.15 },
-      [0, 1.88, 0]);
+    // Arms
+    [-0.76, 0.76].forEach(s => {
+      const arm = _mesh(new THREE.SphereGeometry(0.17, 7, 6), legMat, [s, 1.15, 0.06]);
+      arm.scale.y = 2.2;
+      group.add(arm);
+    });
+
+    // Head — rounder with SphereGeometry top, box jaw = cute helmet look
+    const head = _mesh(new THREE.SphereGeometry(0.44, 10, 8),
+      { color: bodyCol, emissive: dim, emissiveIntensity: 1.4, metalness: 0.4, roughness: 0.4 },
+      [0, 2.04, 0]);
     head.castShadow = true;
     group.add(head);
 
-    // Visor — glows brightly with team colour
-    group.add(_mesh(new THREE.BoxGeometry(0.48, 0.18, 0.1),
-      { color, emissive: cObj, emissiveIntensity: 5.5, transparent: true, opacity: 0.95 },
-      [0, 1.93, 0.37]));
+    // Visor — wide glowing band, very readable at distance
+    group.add(_mesh(new THREE.BoxGeometry(0.62, 0.22, 0.12),
+      { color, emissive: cObj, emissiveIntensity: 6, transparent: true, opacity: 0.97 },
+      [0, 2.06, 0.4]));
 
-    // Gun barrel
-    group.add(_mesh(new THREE.BoxGeometry(0.09, 0.15, 0.6),
-      { color, emissive: cObj, emissiveIntensity: 2.5, metalness: 1 },
-      [0.62, 1.1, -0.35]));
+    // Ear nubs — cheap detail that sells the helmet shape
+    [-0.45, 0.45].forEach(s =>
+      group.add(_mesh(new THREE.BoxGeometry(0.09, 0.22, 0.22),
+        { color, emissive: cObj, emissiveIntensity: 3 }, [s, 2.04, 0.06]))
+    );
 
-    // Aura sphere — soft glow
-    const aura = _mesh(new THREE.SphereGeometry(1.1, 8, 8),
-      { color, emissive: cObj, emissiveIntensity: 0.6, transparent: true, opacity: 0.06 },
-      [0, 1.0, 0]);
+    // Gun — thicker and more prominent
+    group.add(_mesh(new THREE.BoxGeometry(0.14, 0.2, 0.75),
+      { color, emissive: cObj, emissiveIntensity: 3, metalness: 1 },
+      [0.72, 1.15, -0.42]));
+
+    // Aura sphere — soft team-coloured glow ring around whole character
+    const aura = _mesh(new THREE.SphereGeometry(1.3, 8, 8),
+      { color, emissive: cObj, emissiveIntensity: 0.7, transparent: true, opacity: 0.07 },
+      [0, 1.1, 0]);
     group.add(aura);
     group.userData.aura = aura;
 
     // Player point light — big contribution to scene colour
-    const pl = new THREE.PointLight(new THREE.Color(color), 3, 8);
+    const pl = new THREE.PointLight(new THREE.Color(color), 4.5, 10);
     pl.position.set(0, 1.5, 0);
     group.add(pl);
     group.userData.pLight = pl;
