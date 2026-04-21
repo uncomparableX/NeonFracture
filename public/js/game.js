@@ -216,6 +216,11 @@ const Game = (() => {
     ctx.beginPath(); ctx.arc(W/2, H/2, W*0.08, 0, Math.PI*2);
     ctx.strokeStyle = 'rgba(0,200,255,0.3)'; ctx.lineWidth = 1; ctx.stroke();
 
+    // Arena boundary box on minimap — shows players where the edge is
+    const bndPad = 3;
+    ctx.strokeStyle = 'rgba(0,220,255,0.55)'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(bndPad, bndPad, W - bndPad*2, H - bndPad*2);
+
     // Boundary box
     ctx.strokeStyle = 'rgba(0,150,255,0.4)'; ctx.lineWidth = 1.5;
     const bx = mm(-46, -46), bx2 = mm(46, 46);
