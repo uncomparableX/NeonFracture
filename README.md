@@ -87,7 +87,7 @@ Each player has access to a set of abilities with cooldowns and energy costs:
 
 ---
 
-## Architecture (High-Level)
+## Architecture 
 
 The game uses a server-authoritative model to maintain consistency across clients.
 
