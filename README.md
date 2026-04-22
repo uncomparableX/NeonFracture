@@ -1,133 +1,175 @@
-# ⚡ NEON FRACTURE: QUANTUM ARENA
+# Neon Fracture: Quantum Arena
 
-A fast-paced, browser-based multiplayer arena shooter set in a neon cyber world.
+Neon Fracture is a fast-paced, browser-based real-time multiplayer arena game built with a focus on networking, synchronization, and performance.
 
-Built as a real-time game that runs entirely in the browser — no installs, just jump in and play.
+The game runs entirely in the browser with no installation required.
 
----
-
-## 🎮 What it is
-
-Neon Fracture is a competitive multiplayer game where two teams fight inside a futuristic arena.  
-Players capture energy cores, eliminate opponents, and use abilities to control the match.
-
-It’s designed to feel responsive, visually intense, and lightweight enough to run directly in the browser.
+Live Demo: https://neonfracture.onrender.com
 
 ---
 
-## 🧠 Core Gameplay
+## Overview
 
-- Two teams: **Alpha vs Omega**
-- Matches last **5 minutes**
-- First team to **100 points wins**
+Neon Fracture is a competitive multiplayer experience where two teams (Alpha vs Omega) fight inside a futuristic arena. Players capture energy cores, eliminate opponents, and use abilities to control the match.
 
-### How you score:
-- Capture energy cores → +10 points  
-- Eliminate enemies → +5 points  
-
-If time runs out, the team with the higher score wins.
+The project emphasizes real-time systems, server-authoritative architecture, and lightweight rendering using WebGL.
 
 ---
 
-## ⚡ Abilities
+## Gameplay
 
-Each player has access to a small set of abilities:
+- Two teams: Alpha vs Omega  
+- Match duration: 5 minutes  
+- Win condition: First to 100 points or highest score at timeout  
 
-- **Dash** → quick forward teleport  
-- **Freeze** → temporarily disable nearby enemies  
-- **Pulse** → radial burst attack  
-- **Shield** → reduce incoming damage  
+### Scoring
 
-Abilities use energy and have cooldowns, so timing matters.
-
----
-
-## 🎮 Controls
-
-**Desktop**
-- Move → WASD / Arrow keys  
-- Aim → Mouse  
-- Shoot → Click / Space  
-- Abilities → Q / E / R / F  
-- Scoreboard → TAB  
-
-**Mobile**
-- Left joystick → movement  
-- Right side → aim  
-- On-screen buttons → abilities  
+- Capture energy cores: +10 points  
+- Eliminate opponents: +5 points  
 
 ---
 
-## 🧩 Tech Stack
+## Abilities
+
+Each player has access to a set of abilities with cooldowns and energy costs:
+
+- Dash: Short forward teleport  
+- Freeze: Temporarily disables nearby enemies  
+- Pulse: Radial burst attack  
+- Shield: Reduces incoming damage  
+
+---
+
+## Controls
+
+### Desktop
+
+- Movement: WASD / Arrow keys  
+- Aim: Mouse  
+- Shoot: Click / Space  
+- Abilities: Q / E / R / F  
+- Scoreboard: TAB  
+
+### Mobile
+
+- Left joystick: Movement  
+- Right side: Aim  
+- On-screen buttons: Abilities  
+
+---
+
+## Tech Stack
 
 ### Frontend
-- Three.js (WebGL rendering)  
-- Web Audio API (sound + effects)  
-- Vanilla JavaScript  
+
+- JavaScript (Vanilla)
+- Three.js (WebGL rendering)
+- HTML5 Canvas (render loop integration)
+- CSS (UI and HUD styling)
+- Web Audio API (sound effects and feedback)
 
 ### Backend
-- Node.js + Express  
-- Socket.io (real-time communication)  
+
+- Node.js
+- Express.js
+- Socket.io (real-time bidirectional communication)
+
+### Networking Model
+
+- WebSocket-based communication
+- Event-driven architecture
+- Server-authoritative game state
+
+### Deployment
+
+- Render (free tier hosting)
+- GitHub (version control and deployment integration)
 
 ---
 
-## ⚙️ How it works (high-level)
+## Architecture (High-Level)
 
-- The server runs the game loop (tick-based simulation)  
-- Clients send input (movement, shooting, abilities)  
-- Server processes everything and sends back game state  
-- Clients render what the server tells them  
+The game uses a server-authoritative model to maintain consistency across clients.
 
-Client (browser) → input → Server  
-Server → state → Client  
+- The server runs the game loop (tick-based simulation)
+- Clients send input events (movement, shooting, abilities)
+- The server processes all actions and updates the global state
+- The server broadcasts state updates to all clients
+- Clients render based on server state
 
-This keeps gameplay consistent across all players.
+Flow:
 
----
-
-## 📁 Project Structure
-
-/public → frontend (client)  
-  /js  
-    game.js  
-    network.js  
-    renderer.js  
-    ui.js  
-    main.js  
-  /css  
-    style.css  
-  index.html  
-
-/server  
-  index.js → main game server  
-
-package.json  
+Client → Input → Server  
+Server → State → Client  
 
 ---
 
-## 🧪 What’s interesting here
+## Project Structure
+/public
+/js
+game.js # core gameplay logic
+network.js # socket communication
+renderer.js # rendering (Three.js / Canvas)
+ui.js # UI and HUD logic
+main.js # entry point
+/css
+style.css
+index.html
 
-- Real-time multiplayer in a pure browser environment  
-- No frameworks — everything is written from scratch  
-- Server-authoritative game logic  
-- Lightweight but visually styled (neon / cyber theme)  
+/server
+index.js # main game server
+
+package.json
+
 
 ---
 
-## 🧱 Current State
+## Key Features
 
-The core loop is functional:
-- Room creation / joining  
-- Real-time sync  
-- Abilities + combat  
-- Score system  
-
-Still evolving — more polish and features can be added.
+- Real-time multiplayer gameplay in the browser
+- Server-authoritative synchronization model
+- Tick-based game loop
+- Lightweight rendering with Three.js
+- Ability-based combat system
+- Cross-platform support (desktop and mobile browsers)
 
 ---
 
-## 📌 Notes
+## Challenges and Learnings
 
-This is more of a systems + gameplay project than a production game.  
-Focus is on networking, real-time sync, and game mechanics rather than assets or monetization.
+- Handling real-time synchronization across multiple clients  
+- Managing latency and maintaining smooth gameplay  
+- Designing a server-authoritative system to prevent desync  
+- Optimizing performance for low-resource environments  
+- Debugging distributed, non-deterministic behavior  
 
+---
+
+## Current Status
+
+The core systems are functional:
+
+- Multiplayer room handling  
+- Real-time player synchronization  
+- Combat and ability mechanics  
+- Scoring and match logic  
+
+The project is actively being improved with ongoing updates to visuals, performance, and gameplay.
+
+---
+
+## Notes
+
+This project is focused on real-time systems and gameplay architecture rather than production-level assets or monetization.
+
+---
+
+## Try It
+
+https://neonfracture.onrender.com
+
+---
+
+## Repository
+
+https://github.com/uncomparableX/NeonFracture
