@@ -104,26 +104,6 @@ Server → State → Client
 
 ---
 
-## Project Structure
-/public
-/js
-game.js # core gameplay logic
-network.js # socket communication
-renderer.js # rendering (Three.js / Canvas)
-ui.js # UI and HUD logic
-main.js # entry point
-/css
-style.css
-index.html
-
-/server
-index.js # main game server
-
-package.json
-
-
----
-
 ## Key Features
 
 - Real-time multiplayer gameplay in the browser
