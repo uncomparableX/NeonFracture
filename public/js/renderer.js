@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════
-//  NEON FRACTURE — RENDERER  (Complete v4)
+//  NEON FRACTURE — RENDERER  (Complete v6)
 //  FIXED: all graphics, colourful arena, visible boundary,
 //         rich lighting, neon floor, animated sky dome
 // ═══════════════════════════════════════════════════════
@@ -24,6 +24,11 @@ const Renderer = (() => {
   let boundaryGlow  = []; // animated boundary strips
   let skyDome       = null;
   let floorGrid     = null;
+  // Space environment refs (new)
+  let starsFar      = null;  // slow deep-field stars
+  let starsNear     = null;  // faster parallax layer
+  let nebulaMesh    = null;  // canvas-textured nebula quad
+  let hullMeshes    = [];    // spaceship hull struts around arena
 
   const TEAM_A_COLOR  = 0x00d4ff;
   const TEAM_B_COLOR  = 0xff6b35;
@@ -65,18 +70,22 @@ const Renderer = (() => {
     playerMeshes.clear(); bulletMeshes.clear();
     coreMeshes.clear();   powerupMeshes.clear();
     particles = [];
-    pulseRings = []; boundaryGlow = [];
+    pulseRings = []; boundaryGlow = []; hullMeshes = [];
     centerCrystal = centerRing = innerRing = null;
     teamLightA = teamLightB = centerLight = skyDome = floorGrid = null;
+    starsFar = starsNear = nebulaMesh = null;
 
-    _buildSkyDome();
+    _buildSkyDome();          // sky gradient dome
+    _buildStarfield();        // two-layer parallax stars  (NEW)
+    _buildNebula();           // canvas-painted nebula      (NEW)
+    _buildSpaceshipHull();    // hull geometry around arena (NEW)
     _buildArena();
     _buildLighting();
     _buildBoundaryWalls();
     _buildCenterStructure();
     _buildTeamBases();
     _buildObstacles();
-    _buildBackgroundParticles();
+    // _buildBackgroundParticles() removed — replaced by starfield
 
     window.removeEventListener('resize', _onResize);
     window.addEventListener('resize', _onResize);
@@ -100,35 +109,206 @@ const Renderer = (() => {
   //  ARENA CONSTRUCTION
   // ══════════════════════════════════════════════════════
 
-  // Sky dome — deep space with nebula colours
+  // ── SPACE ENVIRONMENT ────────────────────────────────
   function _buildSkyDome() {
-    // Use vertex colours to fake a top-to-horizon gradient — zero shader cost
-    const geo = new THREE.SphereGeometry(280, 24, 16);
-    const posArr = geo.attributes.position.array;
-    const colours = new Float32Array(posArr.length);
-    for (let i = 0; i < posArr.length; i += 3) {
-      const y = posArr[i + 1]; // positive = up
-      const t = Math.max(0, Math.min(1, (y + 280) / 560)); // 0=bottom,1=top
-      // horizon: deep purple-blue  top: near-black dark-navy
-      colours[i]     = 0.02 + t * 0.01;   // R
-      colours[i + 1] = 0.03 + t * 0.02;   // G
-      colours[i + 2] = 0.10 + t * 0.05;   // B — noticeably blue-purple
+    // Deep-space backdrop: vertex-colour gradient from deep indigo (horizon) to near-black (zenith)
+    const geo  = new THREE.SphereGeometry(350, 20, 14);
+    const posA = geo.attributes.position.array;
+    const cols = new Float32Array(posA.length);
+    for (let i = 0; i < posA.length; i += 3) {
+      const t  = Math.max(0, Math.min(1, (posA[i+1] + 350) / 700)); // 0=bottom 1=top
+      // bottom horizon = rich indigo-purple,  zenith = very dark navy
+      cols[i]   = 0.04 + t * 0.02;  // R
+      cols[i+1] = 0.02 + t * 0.01;  // G
+      cols[i+2] = 0.14 + t * 0.06;  // B  → noticeable purple-blue
     }
-    geo.setAttribute('color', new THREE.BufferAttribute(colours, 3));
-    const mat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true });
-    skyDome = new THREE.Mesh(geo, mat);
+    geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+    skyDome = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ side: THREE.BackSide, vertexColors: true }));
     _scene.add(skyDome);
+  }
+
+  // Two-layer parallax starfield — MeshBasicMaterial, zero lighting cost
+  function _buildStarfield() {
+    const makeLayer = (count, radius, size, speed) => {
+      const pos = new Float32Array(count * 3);
+      const col = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        const phi = Math.acos(2 * Math.random() - 1);
+        const th  = Math.random() * Math.PI * 2;
+        pos[i*3]   = radius * Math.sin(phi) * Math.cos(th);
+        pos[i*3+1] = Math.abs(radius * Math.cos(phi)) * 0.9 + 8;
+        pos[i*3+2] = radius * Math.sin(phi) * Math.sin(th);
+        // colour variety: white, cyan-tint, warm-yellow, pink
+        const rng = Math.random();
+        const b   = 0.55 + Math.random() * 0.45;
+        if      (rng < 0.5)  { col[i*3]=b*0.9; col[i*3+1]=b*0.9; col[i*3+2]=b; }       // cold white
+        else if (rng < 0.72) { col[i*3]=b*0.3; col[i*3+1]=b*0.8; col[i*3+2]=b; }       // cyan
+        else if (rng < 0.88) { col[i*3]=b; col[i*3+1]=b*0.85; col[i*3+2]=b*0.4; }      // warm yellow
+        else                 { col[i*3]=b; col[i*3+1]=b*0.45; col[i*3+2]=b*0.75; }     // pink
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color',    new THREE.BufferAttribute(col, 3));
+      const pts = new THREE.Points(geo, new THREE.PointsMaterial({ size, vertexColors: true, transparent: true, opacity: 0.88 }));
+      pts.userData.rotSpeed = speed;
+      _scene.add(pts);
+      return pts;
+    };
+    starsFar  = makeLayer(quality === 'low' ? 300 : 800,  280, 0.9,  0.0015);  // distant, slow
+    starsNear = makeLayer(quality === 'low' ? 100 : 250,  160, 2.2,  0.004);   // closer, faster, bigger
+  }
+
+  // Nebula — single canvas-textured plane far behind the arena, zero shader cost
+  function _buildNebula() {
+    // Paint a nebula onto an offscreen canvas using 2D gradients
+    const SIZE = 512;
+    const c    = document.createElement('canvas');
+    c.width = c.height = SIZE;
+    const ctx  = c.getContext('2d');
+
+    // Dark base
+    ctx.fillStyle = '#010008';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+
+    // Several overlapping radial blobs in different sci-fi colours
+    const blobs = [
+      { x: 0.35, y: 0.42, r: 0.55, c0: 'rgba(60,0,120,0.55)',  c1: 'rgba(0,0,0,0)' },
+      { x: 0.65, y: 0.55, r: 0.45, c0: 'rgba(0,40,100,0.5)',   c1: 'rgba(0,0,0,0)' },
+      { x: 0.50, y: 0.30, r: 0.38, c0: 'rgba(80,0,60,0.45)',   c1: 'rgba(0,0,0,0)' },
+      { x: 0.20, y: 0.65, r: 0.30, c0: 'rgba(0,60,80,0.4)',    c1: 'rgba(0,0,0,0)' },
+      { x: 0.80, y: 0.30, r: 0.28, c0: 'rgba(100,20,0,0.35)',  c1: 'rgba(0,0,0,0)' },
+    ];
+    blobs.forEach(b => {
+      const grd = ctx.createRadialGradient(b.x*SIZE, b.y*SIZE, 0, b.x*SIZE, b.y*SIZE, b.r*SIZE);
+      grd.addColorStop(0, b.c0); grd.addColorStop(1, b.c1);
+      ctx.fillStyle = grd; ctx.fillRect(0, 0, SIZE, SIZE);
+    });
+
+    // Scatter a few bright nebula stars
+    for (let i = 0; i < 60; i++) {
+      const x = Math.random()*SIZE, y = Math.random()*SIZE;
+      const r = 0.5 + Math.random() * 1.5;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random()*0.5})`;
+      ctx.fill();
+    }
+
+    const tex = new THREE.CanvasTexture(c);
+    // Place as a large billboard far behind the arena, tilted slightly
+    nebulaMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(420, 300),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.55, depthWrite: false })
+    );
+    nebulaMesh.position.set(20, 70, -320);
+    nebulaMesh.rotation.x = -0.12;
+    _scene.add(nebulaMesh);
+  }
+
+  // Spaceship hull — static structural struts that surround the arena
+  // Sells the "inside a ship" feel with zero animation cost
+  function _buildSpaceshipHull() {
+    hullMeshes = [];
+    const hullMat = (emitColor, emitInt) => new THREE.MeshStandardMaterial({
+      color: 0x050810, emissive: new THREE.Color(emitColor),
+      emissiveIntensity: emitInt, metalness: 0.9, roughness: 0.3
+    });
+    const add = m => { _scene.add(m); hullMeshes.push(m); return m; };
+
+    // ── 4 massive corner support columns rising up behind the boundary ──
+    const cornerPositions = [[-52,-52],[52,-52],[-52,52],[52,52]];
+    cornerPositions.forEach(([x,z], i) => {
+      const color = i % 2 === 0 ? 0x00aaff : 0xff6622;
+      // Main I-beam column
+      add(_simpleMesh(new THREE.BoxGeometry(3.5, 28, 3.5),
+        hullMat(color, 0.25), [x, 14, z]));
+      // Diagonal brace to wall
+      const braceX = x > 0 ? x - 8 : x + 8;
+      add(_simpleMesh(new THREE.BoxGeometry(12, 0.8, 0.8),
+        hullMat(color, 0.35), [(x + braceX)/2, 20, z]));
+      // Glowing tech panel on column face
+      add(_simpleMesh(new THREE.BoxGeometry(1.8, 6, 0.2),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(color), emissive: new THREE.Color(color), emissiveIntensity: 2.5 }),
+        [x, 10, z < 0 ? z + 2 : z - 2]));
+      // Animated light pod at top
+      const pod = _simpleMesh(new THREE.SphereGeometry(0.9, 7, 6),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(color), emissive: new THREE.Color(color), emissiveIntensity: 4.5 }),
+        [x, 28, z]);
+      pod.userData.isBeacon = true;
+      pod.userData.beaconPhase = Math.random() * Math.PI * 2;
+      add(pod);
+    });
+
+    // ── Overhead lattice beams — classic hangar ceiling look ──
+    const beamMat = hullMat(0x004488, 0.3);
+    [-30, 0, 30].forEach(bx => {
+      add(_simpleMesh(new THREE.BoxGeometry(1.4, 1.4, 106),  beamMat, [bx, 32, 0]));
+    });
+    [-30, 0, 30].forEach(bz => {
+      add(_simpleMesh(new THREE.BoxGeometry(106, 1.4, 1.4), beamMat, [0, 32, bz]));
+    });
+
+    // ── Glowing hull panels along the side walls, above boundary ──
+    const panelData = [
+      { pos: [0, 16, -56], rot: [0,0,0],          color: 0x00ccff },
+      { pos: [0, 16,  56], rot: [0,Math.PI,0],     color: 0x00ccff },
+      { pos: [-56, 16, 0], rot: [0,Math.PI/2,0],   color: 0xff6622 },
+      { pos: [ 56, 16, 0], rot: [0,-Math.PI/2,0],  color: 0xff6622 },
+    ];
+    panelData.forEach(p => {
+      // Large dark hull plate
+      const plate = _simpleMesh(new THREE.BoxGeometry(90, 18, 1.5),
+        hullMat(p.color, 0.15), p.pos);
+      plate.rotation.set(...p.rot);
+      add(plate);
+      // Neon stripe across the plate
+      const stripe = _simpleMesh(new THREE.BoxGeometry(88, 0.4, 0.3),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(p.color), emissive: new THREE.Color(p.color), emissiveIntensity: 3.5 }),
+        [p.pos[0], p.pos[1] + 7, p.pos[2] - 0.9]);
+      stripe.rotation.set(...p.rot);
+      add(stripe);
+      const stripe2 = _simpleMesh(new THREE.BoxGeometry(88, 0.4, 0.3),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(p.color), emissive: new THREE.Color(p.color), emissiveIntensity: 2 }),
+        [p.pos[0], p.pos[1] - 6, p.pos[2] - 0.9]);
+      stripe2.rotation.set(...p.rot);
+      add(stripe2);
+      // Porthole windows — small glowing circles
+      for (let w = -3; w <= 3; w++) {
+        const win = _simpleMesh(new THREE.CircleGeometry(1.2, 10),
+          new THREE.MeshStandardMaterial({ color: 0xaaddff, emissive: 0x5599ff, emissiveIntensity: 2, transparent: true, opacity: 0.7 }),
+          [p.pos[0] + w * 12, p.pos[1] + 3, p.pos[2] - 0.85]);
+        win.rotation.set(...p.rot);
+        add(win);
+      }
+    });
+
+    // ── Floor grating border strips ──
+    const grateColors = [0x0055aa, 0x0055aa, 0xff5500, 0xff5500];
+    [[0, 0.01, -50],[0, 0.01, 50],[-50, 0.01, 0],[50, 0.01, 0]].forEach((p, i) => {
+      const isZ = i < 2;
+      add(_simpleMesh(
+        new THREE.BoxGeometry(isZ ? 96 : 0.6, 0.1, isZ ? 0.6 : 96),
+        new THREE.MeshStandardMaterial({ color: grateColors[i], emissive: grateColors[i], emissiveIntensity: 1.5, transparent: true, opacity: 0.6 }),
+        p
+      ));
+    });
+  }
+
+  // Helper: plain mesh at position (no emissive shorthand needed elsewhere)
+  function _simpleMesh(geo, mat, pos) {
+    const m = new THREE.Mesh(geo, mat);
+    if (pos) m.position.set(...pos);
+    return m;
   }
 
   // Floor — glowing hex tile pattern
   function _buildArena() {
     // Base floor - dark blue-black
     const floorMat = new THREE.MeshStandardMaterial({
-      color:            0x010a18,
-      roughness:        0.9,
-      metalness:        0.1,
-      emissive:         0x001133,
-      emissiveIntensity: 0.6
+      color:            0x020c22,   // slightly brighter blue-dark
+      roughness:        0.75,
+      metalness:        0.35,       // more metallic = looks like ship floor
+      emissive:         0x002255,
+      emissiveIntensity: 0.9        // brighter so floor reads as lit
     });
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(96, 96), floorMat);
     floor.rotation.x = -Math.PI / 2;
@@ -136,7 +316,7 @@ const Renderer = (() => {
     _scene.add(floor);
 
     // Neon grid lines on floor — bright cyan
-    const gridMat = new THREE.LineBasicMaterial({ color: 0x004466, transparent: true, opacity: 0.7 });
+    const gridMat = new THREE.LineBasicMaterial({ color: 0x0066aa, transparent: true, opacity: 0.9 });
     for (let i = -45; i <= 45; i += 5) {
       _scene.add(_line([-45, 0.03, i], [45, 0.03, i], gridMat));
       _scene.add(_line([i, 0.03, -45], [i, 0.03, 45], gridMat));
@@ -163,15 +343,15 @@ const Renderer = (() => {
           const z = (r - 3) * 7.0;
           if (Math.abs(x) > 44 || Math.abs(z) > 44) continue;
           const [baseCol, emitCol] = getHexColor(c, r);
-          const isAccent = (r + c) % 4 === 0; // every 4th tile is brighter
+          const isAccent = (r + c) % 3 === 0; // every 3rd tile brighter (more punch)
           const hx = new THREE.Mesh(
-            new THREE.CylinderGeometry(3.6, 3.6, 0.05, 6),
+            new THREE.CylinderGeometry(3.6, 3.6, 0.06, 6),
             new THREE.MeshStandardMaterial({
               color:             baseCol,
               emissive:          emitCol,
-              emissiveIntensity: isAccent ? 0.9 : 0.45,
+              emissiveIntensity: isAccent ? 1.4 : 0.6,  // noticeably brighter accents
               transparent:       true,
-              opacity:           isAccent ? 0.85 : 0.65
+              opacity:           isAccent ? 0.92 : 0.70
             })
           );
           hx.position.set(x, 0.025, z);
@@ -184,23 +364,23 @@ const Renderer = (() => {
     const zoneA = new THREE.Mesh(
       new THREE.PlaneGeometry(28, 92),
       new THREE.MeshStandardMaterial({
-        color: 0x00aaff, transparent: true, opacity: 0.09,
-        emissive: 0x0088cc, emissiveIntensity: 0.5
+        color: 0x0088ff, transparent: true, opacity: 0.13,  // more visible team zone
+        emissive: 0x0066dd, emissiveIntensity: 0.8
       })
     );
     zoneA.rotation.x = -Math.PI / 2;
-    zoneA.position.set(-32, 0.06, 0);
+    zoneA.position.set(-32, 0.07, 0);
     _scene.add(zoneA);
 
     const zoneB = new THREE.Mesh(
       new THREE.PlaneGeometry(28, 92),
       new THREE.MeshStandardMaterial({
-        color: 0xff6b35, transparent: true, opacity: 0.09,
-        emissive: 0xff4400, emissiveIntensity: 0.5
+        color: 0xff5500, transparent: true, opacity: 0.13,
+        emissive: 0xff4400, emissiveIntensity: 0.8
       })
     );
     zoneB.rotation.x = -Math.PI / 2;
-    zoneB.position.set(32, 0.06, 0);
+    zoneB.position.set(32, 0.07, 0);
     _scene.add(zoneB);
   }
 
@@ -419,7 +599,7 @@ const Renderer = (() => {
       // Platform top neon edge
       const platEdge = _mesh(
         new THREE.BoxGeometry(20.3, 0.1, 22.3),
-        { color: base.color, emissive: base.color, emissiveIntensity: 2.5, transparent: true, opacity: 0.8 },
+        { color: base.color, emissive: base.color, emissiveIntensity: 4.5, transparent: true, opacity: 0.92 },
         [base.x, 0.55, 0]
       );
       _scene.add(platEdge);
@@ -494,7 +674,7 @@ const Renderer = (() => {
       // Dark body
       const obs = _mesh(
         new THREE.BoxGeometry(c.w, c.h, c.d),
-        { color: 0x050f20, roughness: 0.45, metalness: 0.7,  emissive: new THREE.Color(c.c).multiplyScalar(0.18), emissiveIntensity: 1.2 },
+        { color: 0x081428, roughness: 0.4,  metalness: 0.75, emissive: new THREE.Color(c.c).multiplyScalar(0.28), emissiveIntensity: 1.6 },
         [c.x, c.h / 2, c.z]
       );
       obs.castShadow = obs.receiveShadow = true;
@@ -503,7 +683,7 @@ const Renderer = (() => {
       // Neon top edge
       const edge = _mesh(
         new THREE.BoxGeometry(c.w + 0.15, 0.15, c.d + 0.15),
-        { color: c.c, emissive: c.c, emissiveIntensity: 3.5, transparent: true, opacity: 0.85 },
+        { color: c.c, emissive: c.c, emissiveIntensity: 5.0, transparent: true, opacity: 0.95 },
         [c.x, c.h + 0.07, c.z]
       );
       _scene.add(edge);
@@ -517,11 +697,11 @@ const Renderer = (() => {
 
   // ── LIGHTING ──────────────────────────────────────────
   function _buildLighting() {
-    // Brighter ambient — characters are visible without looking washed-out
-    _scene.add(new THREE.AmbientLight(0x1a2a50, 2.2));
+    // Rich ambient with a blue-purple tint — space station interior vibe
+    _scene.add(new THREE.AmbientLight(0x1a2255, 2.8));
 
-    // Key directional — cooler white from above so team colours pop
-    const dir = new THREE.DirectionalLight(0xc8d8ff, 1.2);
+    // Overhead key light — cool bluish-white like hangar fluorescents
+    const dir = new THREE.DirectionalLight(0xbbd5ff, 1.4);
     dir.position.set(10, 50, 20);
     dir.castShadow = quality === 'high';
     if (dir.castShadow) {
@@ -532,15 +712,20 @@ const Renderer = (() => {
     }
     _scene.add(dir);
 
-    // Vivid coloured fills — Team A side cyan, Team B side warm orange
-    const sideA = new THREE.DirectionalLight(0x0055bb, 0.9);
+    // Team A: vivid cyan fill from left
+    const sideA = new THREE.DirectionalLight(0x0077ff, 1.1);
     sideA.position.set(-40, 15, 0); _scene.add(sideA);
-    const sideB = new THREE.DirectionalLight(0xbb4400, 0.9);
+    // Team B: vivid orange fill from right
+    const sideB = new THREE.DirectionalLight(0xff5500, 1.1);
     sideB.position.set(40, 15, 0); _scene.add(sideB);
 
-    // Upward purple fill — gives floor a nice purple-glow sheen
-    const bounce = new THREE.DirectionalLight(0x330066, 0.6);
+    // Upward purple bounce — gives the floor a sci-fi plasma glow
+    const bounce = new THREE.DirectionalLight(0x6600cc, 0.75);
     bounce.position.set(0, -20, 0); _scene.add(bounce);
+
+    // Distant "sun" behind the ship — warm orange/gold from far back
+    const sun = new THREE.DirectionalLight(0xff9944, 0.55);
+    sun.position.set(80, 60, -200); _scene.add(sun);
   }
 
   // Floating particle field in background
@@ -630,9 +815,9 @@ const Renderer = (() => {
     torso.castShadow = true;
     group.add(torso);
 
-    // Chest panel — wide team-colour stripe, very visible
-    group.add(_mesh(new THREE.BoxGeometry(1.16, 0.32, 0.74),
-      { color, emissive: cObj, emissiveIntensity: 3.5 }, [0, 1.28, 0]));
+    // Chest panel — wide team-colour stripe, very visible in dark space
+    group.add(_mesh(new THREE.BoxGeometry(1.16, 0.36, 0.75),
+      { color, emissive: cObj, emissiveIntensity: 5.5 }, [0, 1.28, 0]));
 
     // Rounded shoulder pads — adds cute silhouette bulk
     [-0.68, 0.68].forEach(s => {
@@ -656,7 +841,7 @@ const Renderer = (() => {
 
     // Visor — wide glowing band, very readable at distance
     group.add(_mesh(new THREE.BoxGeometry(0.62, 0.22, 0.12),
-      { color, emissive: cObj, emissiveIntensity: 6, transparent: true, opacity: 0.97 },
+      { color, emissive: cObj, emissiveIntensity: 8, transparent: true, opacity: 1.0 },  // max glow
       [0, 2.06, 0.4]));
 
     // Ear nubs — cheap detail that sells the helmet shape
@@ -670,12 +855,19 @@ const Renderer = (() => {
       { color, emissive: cObj, emissiveIntensity: 3, metalness: 1 },
       [0.72, 1.15, -0.42]));
 
-    // Aura sphere — soft team-coloured glow ring around whole character
-    const aura = _mesh(new THREE.SphereGeometry(1.3, 8, 8),
-      { color, emissive: cObj, emissiveIntensity: 0.7, transparent: true, opacity: 0.07 },
+    // Aura sphere — stronger glow makes characters pop against dark space
+    const aura = _mesh(new THREE.SphereGeometry(1.35, 8, 8),
+      { color, emissive: cObj, emissiveIntensity: 1.0, transparent: true, opacity: 0.10 },
       [0, 1.1, 0]);
     group.add(aura);
     group.userData.aura = aura;
+
+    // Outline ring at feet — cheap ground indicator
+    const footRing = _mesh(new THREE.TorusGeometry(0.7, 0.05, 5, 18),
+      { color, emissive: cObj, emissiveIntensity: 3, transparent: true, opacity: 0.6 },
+      [0, 0.06, 0]);
+    footRing.rotation.x = Math.PI / 2;
+    group.add(footRing);
 
     // Player point light — big contribution to scene colour
     const pl = new THREE.PointLight(new THREE.Color(color), 4.5, 10);
@@ -707,6 +899,8 @@ const Renderer = (() => {
     group.add(ice);
     group.userData.iceMesh = ice;
 
+    // 1.15× uniform scale — characters feel larger and more heroic in space
+    group.scale.set(1.15, 1.15, 1.15);
     group.userData.team = player.team;
     group.userData.walkPhase = Math.random() * Math.PI * 2;
     group.userData.prevX = 0; group.userData.prevZ = 0;
@@ -1079,13 +1273,15 @@ const Renderer = (() => {
         b.material.emissiveIntensity = 2.5 + 1.5 * Math.sin(elapsed * 1.8 + i * 0.5);
       });
 
-      // Beacon orbs pulse
-      _scene.traverse(obj => {
+      // Beacon orbs pulse — iterate hullMeshes only (no expensive scene.traverse)
+      hullMeshes.forEach(obj => {
         if (obj.userData.isBeacon) {
           const phase = obj.userData.beaconPhase || 0;
-          obj.material.emissiveIntensity = 4 + 2 * Math.sin(elapsed * 2.5 + phase);
+          obj.material.emissiveIntensity = 4.5 + 2.5 * Math.sin(elapsed * 2.8 + phase);
         }
       });
+      // Also pulse base pillars (those are NOT in hullMeshes)
+      // Kept separate because they are in the scene from other builders
 
       // Core animations
       coreMeshes.forEach(cm => {
@@ -1121,8 +1317,13 @@ const Renderer = (() => {
         if (p.userData.life <= 0) { _scene.remove(p); particles.splice(i, 1); }
       }
 
-      // Background particle drift
-      if (skyDome?.userData?.particles) skyDome.userData.particles.rotation.y += delta * 0.003;
+      // Parallax starfield rotation — two speeds give depth illusion, very cheap
+      if (starsFar)  starsFar.rotation.y  += delta * 0.0015;
+      if (starsNear) {
+        starsNear.rotation.y += delta * 0.004;
+        // Subtle vertical drift for nearest stars — feels like ship moving
+        starsNear.rotation.x += delta * 0.0006;
+      }
 
       _renderer.render(_scene, _camera);
     } catch(err) {
