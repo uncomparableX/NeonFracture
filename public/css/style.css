@@ -577,7 +577,8 @@ html, body {
   position: absolute; bottom: 0; left: 0; right: 0;
   display: flex; align-items: flex-end;
   padding: 0 16px 16px;
-  background: linear-gradient(0deg, rgba(2,5,18,0.95) 0%, rgba(2,5,18,0.5) 60%, transparent 100%);
+  background: linear-gradient(0deg, rgba(2,4,22,0.98) 0%, rgba(2,4,22,0.65) 55%, transparent 100%);
+  border-top: 1px solid rgba(0,180,255,0.18);
   gap: 16px;
   pointer-events: all;
 }
@@ -586,7 +587,13 @@ html, body {
 .hud-center { flex: 1; display: flex; flex-direction: column; align-items: center; }
 .hud-right { display: flex; align-items: flex-end; }
 
-.stat-block { display: flex; align-items: center; gap: 8px; }
+.stat-block {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(0,5,22,0.5);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(0,150,255,0.15);
+}
 .stat-label {
   font-family: var(--font-display);
   font-size: 0.58rem; letter-spacing: 0.12em;
@@ -663,10 +670,10 @@ html, body {
   box-shadow: inset 0 0 12px rgba(0,212,255,0.08), 0 2px 8px rgba(0,0,0,0.5);
 }
 .ability-slot:hover {
-  border-color: var(--neon-cyan);
-  background: linear-gradient(160deg, rgba(0,212,255,0.2), rgba(0,100,200,0.15));
-  box-shadow: inset 0 0 18px rgba(0,212,255,0.2), 0 0 12px rgba(0,212,255,0.3);
-  transform: translateY(-2px);
+  border-color: rgba(0,240,255,0.85);
+  background: linear-gradient(160deg, rgba(0,220,255,0.25), rgba(0,80,200,0.2));
+  box-shadow: inset 0 0 22px rgba(0,220,255,0.3), 0 0 18px rgba(0,200,255,0.45);
+  transform: translateY(-3px) scale(1.04);
 }
 .ability-slot.on-cooldown { opacity: 0.5; }
 .ability-icon { font-size: 1.5rem; filter: drop-shadow(0 0 4px currentColor); }
@@ -696,27 +703,40 @@ html, body {
 
 /* MINIMAP */
 .minimap-wrap {
-  position: absolute; top: 70px; right: 16px;
+  /* Fixed to bottom-right, above ability bar — no longer overlaps top-left HUD */
+  position: absolute;
+  bottom: 110px;   /* above hud-bottom */
+  right: 16px;
   pointer-events: none;
+  z-index: 7;
 }
 #minimap {
-  border: 1.5px solid rgba(0,212,255,0.45);
+  border: 2px solid rgba(0,220,255,0.6);
   display: block;
-  background: rgba(0,4,20,0.88);
-  box-shadow: 0 0 16px rgba(0,212,255,0.25), inset 0 0 30px rgba(0,0,50,0.6);
-  border-radius: 3px;
+  background: rgba(0,4,26,0.92);
+  box-shadow: 0 0 20px rgba(0,180,255,0.35), inset 0 0 40px rgba(0,0,80,0.7), 0 0 6px rgba(0,120,255,0.5);
+  border-radius: 5px;
 }
 .minimap-label {
   font-family: var(--font-display);
-  font-size: 0.45rem; letter-spacing: 0.15em;
-  color: rgba(0,212,255,0.4);
-  text-align: center; margin-top: 4px;
+  font-size: 0.48rem; letter-spacing: 0.18em;
+  color: rgba(0,220,255,0.65);
+  text-shadow: 0 0 6px rgba(0,220,255,0.5);
+  text-align: center; margin-top: 5px;
+  text-transform: uppercase;
 }
 
 /* PLAYER HUD INFO */
 .player-hud-info {
-  position: absolute; top: 70px; left: 16px;
+  position: absolute; top: 72px; left: 16px;
   pointer-events: none;
+  z-index: 7;
+  /* Subtle backdrop for readability in bright scenes */
+  background: rgba(0,5,20,0.45);
+  padding: 6px 10px;
+  border-left: 2px solid rgba(0,212,255,0.5);
+  border-radius: 0 4px 4px 0;
+  backdrop-filter: blur(4px);
 }
 .player-name-hud {
   font-family: var(--font-display);
@@ -1124,13 +1144,13 @@ kbd {
 }
 .spb-a {
   height: 100%; width: 0%;
-  background: linear-gradient(90deg, var(--team-a), rgba(0,212,255,0.5));
+  background: linear-gradient(90deg, #00eeff 0%, #0088ff 50%, rgba(0,180,255,0.4) 100%);
   transition: width 0.5s ease;
   box-shadow: 0 0 8px var(--team-a);
 }
 .spb-b {
   height: 100%; width: 0%;
-  background: linear-gradient(270deg, var(--team-b), rgba(255,107,53,0.5));
+  background: linear-gradient(270deg, #ff8800 0%, #ff3300 50%, rgba(255,80,0,0.4) 100%);
   transition: width 0.5s ease;
   margin-left: auto;
   box-shadow: 0 0 8px var(--team-b);
@@ -1308,7 +1328,15 @@ kbd {
 .pe-name { flex: 1; font-weight: 600; }
 
 /* ── ANNOUNCER ANIMATIONS ───────────────────────────── */
-.announcer-msg { animation: annIn 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+.announcer-msg {
+  animation: annIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  border-top: 1px solid rgba(currentColor, 0.4) !important;
+  border-bottom: 1px solid rgba(currentColor, 0.4) !important;
+  background: rgba(0,4,24,0.88) !important;
+  letter-spacing: 0.3em !important;
+  text-transform: uppercase;
+  padding: 10px 28px !important;
+}
 @keyframes annIn {
   from { transform: translateX(-50%) translateY(-14px) scale(0.9); opacity: 0; }
   to   { transform: translateX(-50%) translateY(0) scale(1);        opacity: 1; }
@@ -1332,16 +1360,20 @@ kbd {
   top: 72px; left: 12px;
   max-height: 160px;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   overflow: hidden;
   pointer-events: none;
+  /* Push right of player info panel */
+  left: 175px;
 }
 .kill-entry {
-  background: rgba(0,0,0,0.65);
-  padding: 4px 10px;
-  font-size: 0.78rem;
-  border-left: 2px solid rgba(255,255,255,0.15);
-  backdrop-filter: blur(2px);
+  background: rgba(0,2,18,0.80);
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  border-left: 3px solid rgba(0,200,255,0.5);
+  backdrop-filter: blur(4px);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 0 0 8px rgba(0,100,255,0.15);
   transition: opacity 0.6s ease;
 }
 
@@ -1393,8 +1425,8 @@ kbd {
 
 /* ── RESPAWN OVERLAY UPGRADE ────────────────────────── */
 .respawn-overlay {
-  background: rgba(255,20,40,0.06);
-  backdrop-filter: blur(1px);
+  background: radial-gradient(ellipse at center, rgba(180,0,30,0.18) 0%, rgba(0,0,0,0.5) 100%);
+  backdrop-filter: blur(2px);
 }
 
 /* ── ABILITY SLOT HOVER GLOW ────────────────────────── */
