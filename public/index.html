@@ -1,1242 +1,401 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON FRACTURE: Quantum Arena</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --neon-cyan: #00f0ff;
-            --neon-magenta: #ff00a0;
-            --neon-violet: #b829dd;
-            --neon-blue: #0066ff;
-            --neon-green: #00ff9d;
-            --neon-orange: #ff6b35;
-            --dark-bg: #050510;
-            --darker-bg: #020208;
-            --glass-bg: rgba(10, 10, 30, 0.45);
-            --glass-border: rgba(0, 240, 255, 0.15);
-            --glass-border-hover: rgba(0, 240, 255, 0.4);
-            --text-primary: #e8f4f8;
-            --text-secondary: #8a9bb5;
-            --text-muted: #4a5568;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: 'Rajdhani', 'Inter', sans-serif;
-            background: var(--darker-bg);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-
-        /* ===== BACKGROUND SYSTEM (CSS-ONLY, ZERO JS, MINIMAL CPU) ===== */
-        .bg-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: 
-                radial-gradient(ellipse at 20% 20%, rgba(0, 102, 255, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(184, 41, 221, 0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(0, 240, 255, 0.03) 0%, transparent 70%),
-                var(--darker-bg);
-        }
-
-        .bg-grid {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background-image: 
-                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-        }
-
-        /* Floating orbs - pure CSS, GPU accelerated */
-        .orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.4;
-            z-index: -1;
-            pointer-events: none;
-            will-change: transform;
-        }
-
-        .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: var(--neon-blue);
-            top: -10%;
-            left: -5%;
-            animation: float-orb-1 20s ease-in-out infinite;
-        }
-
-        .orb-2 {
-            width: 350px;
-            height: 350px;
-            background: var(--neon-magenta);
-            bottom: -10%;
-            right: -5%;
-            animation: float-orb-2 25s ease-in-out infinite;
-        }
-
-        .orb-3 {
-            width: 250px;
-            height: 250px;
-            background: var(--neon-cyan);
-            top: 50%;
-            left: 50%;
-            animation: float-orb-3 18s ease-in-out infinite;
-        }
-
-        @keyframes float-orb-1 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(80px, 60px) scale(1.1); }
-            66% { transform: translate(-40px, 100px) scale(0.9); }
-        }
-
-        @keyframes float-orb-2 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(-100px, -80px) scale(1.15); }
-            66% { transform: translate(60px, -40px) scale(0.85); }
-        }
-
-        @keyframes float-orb-3 {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-40%, -60%) scale(1.2); }
-        }
-
-        /* Scanline overlay */
-        .scanlines {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 9999;
-            pointer-events: none;
-            opacity: 0.03;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 0, 0, 0.3) 2px,
-                rgba(0, 0, 0, 0.3) 4px
-            );
-        }
-
-        /* ===== NAVIGATION ===== */
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            padding: 1rem 3rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(5, 5, 16, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            transition: all 0.3s ease;
-        }
-
-        .logo {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.4rem;
-            font-weight: 800;
-            letter-spacing: 2px;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
-            position: relative;
-        }
-
-        .logo::after {
-            content: 'QUANTUM ARENA';
-            position: absolute;
-            top: 100%;
-            left: 0;
-            font-size: 0.5rem;
-            font-weight: 500;
-            letter-spacing: 4px;
-            color: var(--text-muted);
-            -webkit-text-fill-color: var(--text-muted);
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2.5rem;
-            list-style: none;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.95rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            transition: all 0.3s ease;
-            position: relative;
-            padding: 0.5rem 0;
-        }
-
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
-            transition: width 0.3s ease;
-            box-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        .nav-links a:hover {
-            color: var(--neon-cyan);
-            text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
-        }
-
-        .nav-links a:hover::after {
-            width: 100%;
-        }
-
-        .nav-cta {
-            font-family: 'Orbitron', sans-serif;
-            padding: 0.7rem 2rem;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
-            border: none;
-            border-radius: 4px;
-            color: var(--dark-bg);
-            font-weight: 700;
-            font-size: 0.85rem;
-            letter-spacing: 1px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3), inset 0 0 20px rgba(255,255,255,0.1);
-        }
-
-        .nav-cta:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 30px rgba(0, 240, 255, 0.5), inset 0 0 20px rgba(255,255,255,0.2);
-        }
-
-        /* ===== HERO SECTION ===== */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 8rem 2rem 4rem;
-            position: relative;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1.2rem;
-            background: rgba(0, 255, 157, 0.1);
-            border: 1px solid rgba(0, 255, 157, 0.3);
-            border-radius: 50px;
-            color: var(--neon-green);
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 2rem;
-            animation: pulse-glow 3s ease-in-out infinite;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 157, 0.2); }
-            50% { box-shadow: 0 0 25px rgba(0, 255, 157, 0.4); }
-        }
-
-        .hero-badge .dot {
-            width: 6px;
-            height: 6px;
-            background: var(--neon-green);
-            border-radius: 50%;
-            box-shadow: 0 0 8px var(--neon-green);
-            animation: blink 2s ease-in-out infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        .hero h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(2.5rem, 7vw, 5.5rem);
-            font-weight: 900;
-            line-height: 1.1;
-            letter-spacing: 4px;
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-
-        .hero h1 .line-1 {
-            display: block;
-            background: linear-gradient(180deg, #fff 0%, var(--neon-cyan) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            filter: drop-shadow(0 0 40px rgba(0, 240, 255, 0.3));
-        }
-
-        .hero h1 .line-2 {
-            display: block;
-            font-size: 0.6em;
-            letter-spacing: 8px;
-            background: linear-gradient(90deg, var(--neon-magenta), var(--neon-violet));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-top: 0.3rem;
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1rem, 2vw, 1.3rem);
-            color: var(--text-secondary);
-            max-width: 600px;
-            line-height: 1.7;
-            margin-bottom: 3rem;
-            font-weight: 400;
-        }
-
-        .hero-cta-group {
-            display: flex;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .btn-primary {
-            font-family: 'Orbitron', sans-serif;
-            padding: 1.1rem 3rem;
-            font-size: 0.9rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
-            color: var(--dark-bg);
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 10px 40px rgba(0, 240, 255, 0.5), inset 0 1px 0 rgba(255,255,255,0.3);
-        }
-
-        .btn-primary::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.6s ease;
-        }
-
-        .btn-primary:hover::before {
-            left: 100%;
-        }
-
-        .btn-secondary {
-            font-family: 'Orbitron', sans-serif;
-            padding: 1.1rem 3rem;
-            font-size: 0.9rem;
-            font-weight: 700;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            border: 1px solid var(--glass-border-hover);
-            border-radius: 6px;
-            cursor: pointer;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            color: var(--neon-cyan);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.1);
-            transition: all 0.3s ease;
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--neon-cyan);
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.2), inset 0 0 20px rgba(0, 240, 255, 0.05);
-            transform: translateY(-3px);
-        }
-
-        /* Hero stats bar */
-        .hero-stats {
-            display: flex;
-            gap: 3rem;
-            margin-top: 4rem;
-            padding: 1.5rem 3rem;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
-        }
-
-        .stat-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-top: 0.3rem;
-        }
-
-        /* ===== GAME MODES SECTION ===== */
-        .section {
-            padding: 6rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .section-tag {
-            display: inline-block;
-            padding: 0.4rem 1rem;
-            background: rgba(255, 0, 160, 0.1);
-            border: 1px solid rgba(255, 0, 160, 0.3);
-            border-radius: 50px;
-            color: var(--neon-magenta);
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-        }
-
-        .section-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(1.8rem, 4vw, 3rem);
-            font-weight: 700;
-            letter-spacing: 2px;
-            margin-bottom: 1rem;
-        }
-
-        .section-title span {
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .section-desc {
-            color: var(--text-secondary);
-            max-width: 500px;
-            margin: 0 auto;
-            line-height: 1.7;
-        }
-
-        /* Cards Grid */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .game-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 2.5rem;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.4s ease;
-            cursor: pointer;
-        }
-
-        .game-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta), var(--neon-violet));
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
-
-        .game-card:hover {
-            border-color: var(--glass-border-hover);
-            transform: translateY(-8px);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px rgba(0, 240, 255, 0.08);
-        }
-
-        .game-card:hover::before {
-            opacity: 1;
-        }
-
-        .card-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-
-        .card-icon.cyan {
-            background: rgba(0, 240, 255, 0.1);
-            border: 1px solid rgba(0, 240, 255, 0.2);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
-        }
-
-        .card-icon.magenta {
-            background: rgba(255, 0, 160, 0.1);
-            border: 1px solid rgba(255, 0, 160, 0.2);
-            box-shadow: 0 0 20px rgba(255, 0, 160, 0.15);
-        }
-
-        .card-icon.violet {
-            background: rgba(184, 41, 221, 0.1);
-            border: 1px solid rgba(184, 41, 221, 0.2);
-            box-shadow: 0 0 20px rgba(184, 41, 221, 0.15);
-        }
-
-        .card-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            font-weight: 700;
-            margin-bottom: 0.8rem;
-            letter-spacing: 1px;
-        }
-
-        .card-desc {
-            color: var(--text-secondary);
-            line-height: 1.7;
-            font-size: 0.95rem;
-        }
-
-        .card-meta {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .meta-tag {
-            font-size: 0.7rem;
-            padding: 0.3rem 0.8rem;
-            border-radius: 4px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .meta-tag.cyan {
-            background: rgba(0, 240, 255, 0.1);
-            color: var(--neon-cyan);
-            border: 1px solid rgba(0, 240, 255, 0.2);
-        }
-
-        .meta-tag.magenta {
-            background: rgba(255, 0, 160, 0.1);
-            color: var(--neon-magenta);
-            border: 1px solid rgba(255, 0, 160, 0.2);
-        }
-
-        /* ===== FEATURES SECTION ===== */
-        .features-section {
-            background: linear-gradient(180deg, transparent 0%, rgba(0, 102, 255, 0.03) 50%, transparent 100%);
-        }
-
-        .feature-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-            margin-bottom: 6rem;
-        }
-
-        .feature-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .feature-row.reverse {
-            direction: rtl;
-        }
-
-        .feature-row.reverse > * {
-            direction: ltr;
-        }
-
-        .feature-visual {
-            position: relative;
-            height: 350px;
-            border-radius: 20px;
-            overflow: hidden;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .feature-visual-inner {
-            width: 80%;
-            height: 70%;
-            border-radius: 12px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .fv-1 {
-            background: linear-gradient(135deg, rgba(0, 240, 255, 0.1), rgba(0, 102, 255, 0.1));
-            border: 1px solid rgba(0, 240, 255, 0.2);
-        }
-
-        .fv-2 {
-            background: linear-gradient(135deg, rgba(255, 0, 160, 0.1), rgba(184, 41, 221, 0.1));
-            border: 1px solid rgba(255, 0, 160, 0.2);
-        }
-
-        .fv-3 {
-            background: linear-gradient(135deg, rgba(0, 255, 157, 0.1), rgba(0, 240, 255, 0.1));
-            border: 1px solid rgba(0, 255, 157, 0.2);
-        }
-
-        /* Decorative elements inside feature visuals */
-        .dec-ring {
-            position: absolute;
-            border-radius: 50%;
-            border: 2px solid;
-            opacity: 0.3;
-        }
-
-        .dec-ring-1 {
-            width: 150px;
-            height: 150px;
-            border-color: var(--neon-cyan);
-            top: 20%;
-            left: 20%;
-            animation: rotate-slow 20s linear infinite;
-        }
-
-        .dec-ring-2 {
-            width: 100px;
-            height: 100px;
-            border-color: var(--neon-magenta);
-            bottom: 20%;
-            right: 20%;
-            animation: rotate-slow 15s linear infinite reverse;
-        }
-
-        .dec-dot {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--neon-cyan);
-            box-shadow: 0 0 15px var(--neon-cyan);
-        }
-
-        @keyframes rotate-slow {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .feature-content h3 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            letter-spacing: 1px;
-        }
-
-        .feature-content h3 span {
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .feature-content p {
-            color: var(--text-secondary);
-            line-height: 1.8;
-            font-size: 1.05rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .feature-list {
-            list-style: none;
-        }
-
-        .feature-list li {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            margin-bottom: 0.8rem;
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .feature-list li::before {
-            content: '▸';
-            color: var(--neon-cyan);
-            font-size: 1.2rem;
-            text-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        /* ===== HOW TO PLAY / ROOM SECTION ===== */
-        .room-section {
-            text-align: center;
-        }
-
-        .room-container {
-            max-width: 600px;
-            margin: 3rem auto 0;
-            padding: 3rem;
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .room-container::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(from 0deg, transparent, rgba(0, 240, 255, 0.03), transparent 30%);
-            animation: rotate-slow 10s linear infinite;
-            pointer-events: none;
-        }
-
-        .room-input-group {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .room-input {
-            flex: 1;
-            padding: 1rem 1.5rem;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-family: 'Rajdhani', sans-serif;
-            font-size: 1.1rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        .room-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .room-input:focus {
-            border-color: var(--neon-cyan);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
-        }
-
-        .room-btn {
-            padding: 1rem 2.5rem;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
-            border: none;
-            border-radius: 10px;
-            color: var(--dark-bg);
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 0.85rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-        }
-
-        .room-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.4);
-        }
-
-        .room-or {
-            position: relative;
-            z-index: 1;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin: 1.5rem 0;
-        }
-
-        .room-or::before,
-        .room-or::after {
-            content: '';
-            display: inline-block;
-            width: 60px;
-            height: 1px;
-            background: var(--glass-border);
-            vertical-align: middle;
-            margin: 0 1rem;
-        }
-
-        .create-room-btn {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            padding: 1.2rem;
-            background: transparent;
-            border: 1px solid var(--neon-magenta);
-            border-radius: 10px;
-            color: var(--neon-magenta);
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .create-room-btn:hover {
-            background: rgba(255, 0, 160, 0.1);
-            box-shadow: 0 0 30px rgba(255, 0, 160, 0.2);
-        }
-
-        /* ===== FOOTER ===== */
-        .footer {
-            border-top: 1px solid var(--glass-border);
-            padding: 3rem 2rem;
-            text-align: center;
-            background: rgba(2, 2, 8, 0.8);
-            backdrop-filter: blur(20px);
-        }
-
-        .footer-logo {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-violet));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 1rem;
-        }
-
-        .footer-text {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            max-width: 400px;
-            margin: 0 auto 1.5rem;
-            line-height: 1.6;
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .footer-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.85rem;
-            transition: color 0.3s ease;
-        }
-
-        .footer-links a:hover {
-            color: var(--neon-cyan);
-        }
-
-        .footer-copy {
-            color: var(--text-muted);
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-        }
-
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .navbar {
-                padding: 1rem 1.5rem;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .hero-stats {
-                gap: 1.5rem;
-                padding: 1rem 2rem;
-            }
-
-            .feature-row {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-
-            .feature-row.reverse {
-                direction: ltr;
-            }
-
-            .room-input-group {
-                flex-direction: column;
-            }
-
-            .cards-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* ===== SCROLLBAR ===== */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--darker-bg);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--glass-border-hover);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--neon-cyan);
-        }
-
-        /* ===== ANIMATIONS ON SCROLL ===== */
-        .fade-in {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-
-        .fade-in.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NEON FRACTURE: Quantum Arena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Background System -->
-    <div class="bg-container"></div>
-    <div class="bg-grid"></div>
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-    <div class="scanlines"></div>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="logo">NEON FRACTURE</div>
-        <ul class="nav-links">
-            <li><a href="#modes">Modes</a></li>
-            <li><a href="#features">Features</a></li>
-            <li><a href="#play">Play Now</a></li>
-            <li><a href="#leaderboard">Leaderboard</a></li>
-        </ul>
-        <button class="nav-cta">Join Arena</button>
-    </nav>
+<!-- ═══════════════ SCREENS ═══════════════ -->
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-badge">
-            <span class="dot"></span>
-            Live Multiplayer Arena
+<!-- HOME SCREEN -->
+<div id="screen-home" class="screen active">
+  <canvas id="bg-canvas"></canvas>
+  <div class="home-content">
+    <div class="logo-wrap">
+      <div class="logo-glitch" data-text="NEON FRACTURE">NEON FRACTURE</div>
+      <div class="logo-sub">QUANTUM ARENA</div>
+      <div class="logo-tagline">The future of combat has arrived</div>
+    </div>
+    <div class="home-buttons">
+      <button class="btn-primary" onclick="UI.showScreen('screen-multiplayer')">
+        <span class="btn-icon">⚡</span> ENTER ARENA
+      </button>
+      <button class="btn-secondary" onclick="UI.showScreen('screen-settings')">
+        <span class="btn-icon">⚙</span> SETTINGS
+      </button>
+      <button class="btn-secondary" onclick="UI.showScreen('screen-howto')">
+        <span class="btn-icon">◎</span> HOW TO PLAY
+      </button>
+    </div>
+    <div class="home-footer">
+      <span class="version-tag">v1.0.0 QUANTUM BUILD</span>
+      <span class="status-dot"></span>
+      <span id="online-count">0 OPERATORS ONLINE</span>
+    </div>
+  </div>
+  <div class="scanlines"></div>
+</div>
+
+<!-- MULTIPLAYER LOBBY SCREEN -->
+<div id="screen-multiplayer" class="screen">
+  <div class="screen-inner">
+    <div class="screen-header">
+      <button class="btn-back" onclick="UI.showScreen('screen-home')">← BACK</button>
+      <h2 class="screen-title">QUANTUM ARENA</h2>
+    </div>
+    <div class="lobby-grid">
+      <div class="lobby-panel">
+        <div class="panel-title">CREATE ROOM</div>
+        <input type="text" id="create-name" class="neon-input" placeholder="CALLSIGN" maxlength="16">
+        <input type="text" id="create-room-name" class="neon-input" placeholder="ROOM NAME (optional)" maxlength="20">
+        <button class="btn-primary" onclick="Network.createRoom()">
+          <span>⚡ CREATE ARENA</span>
+        </button>
+      </div>
+      <div class="divider-or"><span>OR</span></div>
+      <div class="lobby-panel">
+        <div class="panel-title">JOIN ROOM</div>
+        <input type="text" id="join-name" class="neon-input" placeholder="CALLSIGN" maxlength="16">
+        <input type="text" id="join-room-id" class="neon-input" placeholder="ROOM CODE" maxlength="8" style="text-transform:uppercase">
+        <div class="team-select">
+          <div class="team-btn team-a active" id="team-btn-a" onclick="UI.selectTeam('A')">TEAM ALPHA</div>
+          <div class="team-btn team-b" id="team-btn-b" onclick="UI.selectTeam('B')">TEAM OMEGA</div>
         </div>
-        <h1>
-            <span class="line-1">NEON FRACTURE</span>
-            <span class="line-2">QUANTUM ARENA</span>
-        </h1>
-        <p class="hero-subtitle">
-            Enter a hyper-kinetic cyber battlefield where quantum abilities meet tactical warfare. 
-            Team up, gear up, and dominate the neon-drenched arena.
-        </p>
-        <div class="hero-cta-group">
-            <button class="btn-primary">Enter the Arena</button>
-            <button class="btn-secondary">Watch Trailer</button>
+        <button class="btn-primary btn-omega" onclick="Network.joinRoom()">
+          <span>◎ JOIN ARENA</span>
+        </button>
+      </div>
+    </div>
+    <div id="error-msg" class="error-msg hidden"></div>
+  </div>
+</div>
+
+<!-- ROOM LOBBY -->
+<div id="screen-room" class="screen">
+  <div class="screen-inner">
+    <div class="screen-header">
+      <button class="btn-back" onclick="Network.leaveRoom()">← LEAVE</button>
+      <div>
+        <h2 class="screen-title" id="room-name-display">ARENA</h2>
+        <div class="room-code-display">ROOM CODE: <span id="room-code-text" class="highlight-text"></span>
+          <button class="btn-copy" onclick="UI.copyRoomCode()">COPY</button>
         </div>
-        <div class="hero-stats">
-            <div class="stat-item">
-                <div class="stat-value" id="stat-players">2,847</div>
-                <div class="stat-label">Online Now</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">5v5</div>
-                <div class="stat-label">Max Team Size</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">0ms</div>
-                <div class="stat-label">Avg Latency</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-value">∞</div>
-                <div class="stat-label">Frags Today</div>
-            </div>
+      </div>
+    </div>
+    <div class="room-content">
+      <div class="teams-container">
+        <div class="team-panel team-a-panel">
+          <div class="team-header team-a-header">⚡ TEAM ALPHA</div>
+          <div id="team-a-list" class="player-list"></div>
         </div>
-    </section>
-
-    <!-- Game Modes -->
-    <section class="section" id="modes">
-        <div class="section-header fade-in">
-            <div class="section-tag">Combat Protocols</div>
-            <h2 class="section-title">Choose Your <span>Battle Mode</span></h2>
-            <p class="section-desc">Two distinct ways to prove your dominance in the quantum arena.</p>
+        <div class="vs-divider">VS</div>
+        <div class="team-panel team-b-panel">
+          <div class="team-header team-b-header">◎ TEAM OMEGA</div>
+          <div id="team-b-list" class="player-list"></div>
         </div>
-        <div class="cards-grid">
-            <div class="game-card fade-in">
-                <div class="card-icon cyan">⚡</div>
-                <h3 class="card-title">Energy Core Capture</h3>
-                <p class="card-desc">Race against the enemy team to capture and hold unstable Energy Cores scattered across the arena. Tactical positioning and team coordination are key to victory.</p>
-                <div class="card-meta">
-                    <span class="meta-tag cyan">2v2 - 5v5</span>
-                    <span class="meta-tag cyan">Objective</span>
-                </div>
-            </div>
-            <div class="game-card fade-in">
-                <div class="card-icon magenta">☠️</div>
-                <h3 class="card-title">Team Elimination</h3>
-                <p class="card-desc">Pure combat. No objectives, no mercy. Wipe out the entire enemy squad using your quantum abilities, energy weapons, and tactical shields.</p>
-                <div class="card-meta">
-                    <span class="meta-tag magenta">2v2 - 5v5</span>
-                    <span class="meta-tag magenta">Deathmatch</span>
-                </div>
-            </div>
-            <div class="game-card fade-in">
-                <div class="card-icon violet">🏆</div>
-                <h3 class="card-title">Ranked Ladder</h3>
-                <p class="card-desc">Climb the global leaderboard through competitive seasons. Earn XP, unlock cosmetic rewards, and prove you are the ultimate quantum warrior.</p>
-                <div class="card-meta">
-                    <span class="meta-tag magenta">Seasonal</span>
-                    <span class="meta-tag cyan">Leaderboard</span>
-                </div>
-            </div>
+      </div>
+      <div class="room-actions">
+        <button class="btn-secondary" onclick="Network.switchTeam()">⇄ SWITCH TEAM</button>
+        <button class="btn-primary btn-start" id="btn-start" onclick="Network.startGame()">⚡ START MATCH</button>
+      </div>
+      <div class="waiting-msg" id="waiting-msg">Waiting for host to start...</div>
+    </div>
+  </div>
+</div>
+
+<!-- COUNTDOWN -->
+<div id="screen-countdown" class="screen">
+  <div class="countdown-wrap">
+    <div class="countdown-label">MATCH STARTING IN</div>
+    <div id="countdown-num" class="countdown-num">5</div>
+    <div class="countdown-sub">PREPARE FOR COMBAT</div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="screen-game" class="screen">
+  <canvas id="game-canvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hud">
+    <!-- TOP BAR -->
+    <div class="hud-top">
+      <div class="team-score team-a-score">
+        <div class="score-val" id="score-a">0</div>
+        <div class="team-label">ALPHA</div>
+      </div>
+      <div class="match-info">
+        <div class="score-progress-bar">
+          <div class="spb-a" id="score-bar-a"></div>
+          <div class="spb-center">VS</div>
+          <div class="spb-b" id="score-bar-b"></div>
         </div>
-    </section>
+        <div class="match-time" id="match-time">5:00</div>
+        <div class="match-label">QUANTUM ARENA · FIRST TO 100</div>
+      </div>
+      <div class="team-score team-b-score">
+        <div class="score-val" id="score-b">0</div>
+        <div class="team-label">OMEGA</div>
+      </div>
+    </div>
 
-    <!-- Features -->
-    <section class="section features-section" id="features">
-        <div class="section-header fade-in">
-            <div class="section-tag">Arsenal</div>
-            <h2 class="section-title">Quantum <span>Abilities</span></h2>
-            <p class="section-desc">Master the battlefield with next-generation combat mechanics.</p>
+    <!-- BOTTOM HUD -->
+    <div class="hud-bottom">
+      <div class="hud-left">
+        <div class="stat-block">
+          <div class="stat-label">HEALTH</div>
+          <div class="bar-wrap"><div class="bar bar-health" id="bar-health"></div></div>
+          <div class="stat-val" id="val-health">100</div>
         </div>
-
-        <div class="feature-row fade-in">
-            <div class="feature-visual">
-                <div class="feature-visual-inner fv-1">
-                    <div class="dec-ring dec-ring-1"></div>
-                    <div class="dec-ring dec-ring-2"></div>
-                    <div class="dec-dot" style="top:30%;left:30%;"></div>
-                    <div class="dec-dot" style="bottom:30%;right:30%;background:var(--neon-magenta);box-shadow:0 0 15px var(--neon-magenta);"></div>
-                </div>
-            </div>
-            <div class="feature-content">
-                <h3>Quantum <span>Dash</span> Movement</h3>
-                <p>Phase through space with lightning-fast quantum dashes. Chain movements for advanced traversal and unpredictable combat angles.</p>
-                <ul class="feature-list">
-                    <li>Physics-driven momentum system</li>
-                    <li>Wall-dash chaining mechanics</li>
-                    <li>Zero-gravity zone traversal</li>
-                </ul>
-            </div>
+        <div class="stat-block">
+          <div class="stat-label">ENERGY</div>
+          <div class="bar-wrap"><div class="bar bar-energy" id="bar-energy"></div></div>
+          <div class="stat-val" id="val-energy">100</div>
         </div>
+      </div>
 
-        <div class="feature-row reverse fade-in">
-            <div class="feature-visual">
-                <div class="feature-visual-inner fv-2">
-                    <div class="dec-ring dec-ring-1" style="border-color:var(--neon-magenta);"></div>
-                    <div class="dec-ring dec-ring-2" style="border-color:var(--neon-violet);"></div>
-                    <div class="dec-dot" style="top:40%;left:40%;background:var(--neon-violet);box-shadow:0 0 15px var(--neon-violet);"></div>
-                </div>
-            </div>
-            <div class="feature-content">
-                <h3>Time <span>Manipulation</span></h3>
-                <p>Bend time to your will. Slow enemy projectiles, rewind your position, or accelerate your reload speed in critical moments.</p>
-                <ul class="feature-list">
-                    <li>Temporal slow fields</li>
-                    <li>Position rewind ability</li>
-                    <li>Chrono-burst ultimate</li>
-                </ul>
-            </div>
+      <div class="hud-center">
+        <div class="crosshair" id="crosshair">+</div>
+      </div>
+
+      <div class="hud-right">
+        <div class="abilities-bar">
+          <div class="ability-slot" id="ab-dash" onclick="Game.useAbility('dash')">
+            <div class="ability-icon">⚡</div>
+            <div class="ability-name">DASH</div>
+            <div class="ability-key">Q</div>
+            <div class="ability-cd" id="cd-dash"></div>
+            <div class="ability-overlay" id="ov-dash"></div>
+          </div>
+          <div class="ability-slot" id="ab-freeze" onclick="Game.useAbility('freeze')">
+            <div class="ability-icon">❄</div>
+            <div class="ability-name">FREEZE</div>
+            <div class="ability-key">E</div>
+            <div class="ability-cd" id="cd-freeze"></div>
+            <div class="ability-overlay" id="ov-freeze"></div>
+          </div>
+          <div class="ability-slot" id="ab-pulse" onclick="Game.useAbility('pulse')">
+            <div class="ability-icon">◎</div>
+            <div class="ability-name">PULSE</div>
+            <div class="ability-key">R</div>
+            <div class="ability-cd" id="cd-pulse"></div>
+            <div class="ability-overlay" id="ov-pulse"></div>
+          </div>
+          <div class="ability-slot" id="ab-shield" onclick="Game.useAbility('shield')">
+            <div class="ability-icon">🛡</div>
+            <div class="ability-name">SHIELD</div>
+            <div class="ability-key">F</div>
+            <div class="ability-cd" id="cd-shield"></div>
+            <div class="ability-overlay" id="ov-shield"></div>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <div class="feature-row fade-in">
-            <div class="feature-visual">
-                <div class="feature-visual-inner fv-3">
-                    <div class="dec-ring dec-ring-1" style="border-color:var(--neon-green);"></div>
-                    <div class="dec-ring dec-ring-2" style="border-color:var(--neon-cyan);"></div>
-                    <div class="dec-dot" style="top:35%;right:35%;background:var(--neon-green);box-shadow:0 0 15px var(--neon-green);"></div>
-                </div>
-            </div>
-            <div class="feature-content">
-                <h3>Dynamic <span>Shield</span> Systems</h3>
-                <p>Deploy energy barriers that adapt to incoming damage types. Overcharge your shields to unleash devastating shockwaves.</p>
-                <ul class="feature-list">
-                    <li>Adaptive damage resistance</li>
-                    <li>Shield overcharge mechanics</li>
-                    <li>Team barrier projection</li>
-                </ul>
-            </div>
+    <!-- KILL FEED -->
+    <div class="kill-feed" id="kill-feed"></div>
+
+    <!-- MINIMAP -->
+    <div class="minimap-wrap">
+      <canvas id="minimap" width="120" height="120"></canvas>
+      <div class="minimap-label">SECTOR MAP</div>
+    </div>
+
+    <!-- PLAYER INFO -->
+    <div class="player-hud-info">
+      <div class="player-name-hud" id="player-name-hud" data-set=""></div>
+      <div class="player-level-row">
+        <div class="level-badge" id="level-badge">LVL 1</div>
+        <div class="xp-bar-wrap">
+          <div class="xp-bar-fill" id="xp-bar-fill"></div>
         </div>
-    </section>
+      </div>
+    </div>
 
-    <!-- Play Now / Room Join -->
-    <section class="section room-section" id="play">
-        <div class="section-header fade-in">
-            <div class="section-tag">Drop In</div>
-            <h2 class="section-title">Enter the <span>Arena</span></h2>
-            <p class="section-desc">No download required. Join a room and play instantly in your browser.</p>
+    <!-- SCOREBOARD (TAB) -->
+    <div id="scoreboard" class="scoreboard hidden">
+      <div class="sb-title">⚡ QUANTUM ARENA — SCOREBOARD</div>
+      <div class="sb-scores-top">
+        <div class="sb-ts team-a-col" id="sb-ts-a">ALPHA: 0</div>
+        <div class="sb-ts-div">·</div>
+        <div class="sb-ts team-b-col" id="sb-ts-b">OMEGA: 0</div>
+      </div>
+      <div class="sb-grid">
+        <div class="sb-team-col">
+          <div class="sb-team-header team-a-header">⚡ TEAM ALPHA</div>
+          <div class="sb-col-labels"><span>NAME</span><span>K</span><span>D</span><span>PTS</span><span>LV</span></div>
+          <div id="sb-team-a"></div>
         </div>
-        <div class="room-container fade-in">
-            <div class="room-input-group">
-                <input type="text" class="room-input" placeholder="ENTER ROOM CODE" maxlength="8">
-                <button class="room-btn">Join</button>
-            </div>
-            <div class="room-or">or</div>
-            <button class="create-room-btn">Create New Room</button>
+        <div class="sb-team-col">
+          <div class="sb-team-header team-b-header">◎ TEAM OMEGA</div>
+          <div class="sb-col-labels"><span>NAME</span><span>K</span><span>D</span><span>PTS</span><span>LV</span></div>
+          <div id="sb-team-b"></div>
         </div>
-    </section>
+      </div>
+      <div class="sb-hint">[ TAB ] CLOSE</div>
+    </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-logo">NEON FRACTURE</div>
-        <p class="footer-text">A next-generation browser-based multiplayer arena shooter. Built with Three.js, Node.js, and Socket.io.</p>
-        <div class="footer-links">
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Support</a>
-            <a href="#">Discord</a>
+    <!-- RESPAWN OVERLAY -->
+    <div id="respawn-overlay" class="respawn-overlay hidden">
+      <div class="respawn-text">ELIMINATED</div>
+      <div class="respawn-sub">Respawning in <span id="respawn-timer">4</span>s...</div>
+    </div>
+
+    <!-- FREEZE OVERLAY -->
+    <div id="freeze-overlay" class="freeze-overlay hidden"></div>
+  </div>
+
+  <!-- MOBILE CONTROLS -->
+  <div id="mobile-controls" class="mobile-controls">
+    <div id="joystick-zone" class="joystick-zone">
+      <div id="joystick-base" class="joystick-base">
+        <div id="joystick-stick" class="joystick-stick"></div>
+      </div>
+    </div>
+    <div class="mobile-actions">
+      <button class="mobile-fire" id="mobile-fire">FIRE</button>
+      <div class="mobile-abilities">
+        <button class="mob-ab" onclick="Game.useAbility('dash')">⚡</button>
+        <button class="mob-ab" onclick="Game.useAbility('freeze')">❄</button>
+        <button class="mob-ab" onclick="Game.useAbility('pulse')">◎</button>
+        <button class="mob-ab" onclick="Game.useAbility('shield')">🛡</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MATCH END -->
+<div id="screen-end" class="screen">
+  <div class="end-content">
+    <div class="end-result" id="end-result">VICTORY</div>
+    <div class="end-team" id="end-team">TEAM ALPHA WINS</div>
+    <div class="end-reason" id="end-reason">REACHED 100 POINTS FIRST</div>
+    <div class="end-stats">
+      <div class="end-stats-title">MATCH SUMMARY</div>
+      <div class="end-scores">
+        <div class="end-score-block">
+          <div class="end-team-label team-a-col">ALPHA</div>
+          <div class="end-score-val" id="end-score-a">0</div>
         </div>
-        <p class="footer-copy">© 2026 NEON FRACTURE. All rights reserved.</p>
-    </footer>
+        <div class="end-score-block">
+          <div class="end-team-label team-b-col">OMEGA</div>
+          <div class="end-score-val" id="end-score-b">0</div>
+        </div>
+      </div>
+      <table class="stats-table" id="stats-table">
+        <thead><tr><th>PLAYER</th><th>TEAM</th><th>K</th><th>D</th><th>K/D</th><th>SCORE</th><th>LVL</th></tr></thead>
+        <tbody id="stats-tbody"></tbody>
+      </table>
+    </div>
+    <div class="end-actions">
+      <button class="btn-primary" onclick="Network.returnToLobby()">⚡ PLAY AGAIN</button>
+      <button class="btn-secondary" onclick="UI.showScreen('screen-home')">◎ MAIN MENU</button>
+    </div>
+  </div>
+</div>
 
-    <script>
-        // Minimal JS - only for scroll animations and lightweight interactivity
-        // No canvas, no WebGL, no particle systems = zero CPU load
+<!-- SETTINGS -->
+<div id="screen-settings" class="screen">
+  <div class="screen-inner">
+    <div class="screen-header">
+      <button class="btn-back" onclick="UI.showScreen('screen-home')">← BACK</button>
+      <h2 class="screen-title">SETTINGS</h2>
+    </div>
+    <div class="settings-grid">
+      <div class="settings-group">
+        <div class="settings-label">SOUND EFFECTS</div>
+        <div class="toggle-wrap">
+          <div class="toggle active" id="toggle-sfx" onclick="Settings.toggle('sfx')"></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-label">MUSIC</div>
+        <div class="toggle-wrap">
+          <div class="toggle active" id="toggle-music" onclick="Settings.toggle('music')"></div>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-label">GRAPHICS QUALITY</div>
+        <div class="select-wrap">
+          <select class="neon-select" id="gfx-quality" onchange="Settings.setGfx(this.value)">
+            <option value="low">LOW</option>
+            <option value="medium" selected>MEDIUM</option>
+            <option value="high">HIGH</option>
+          </select>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div class="settings-label">SCREEN SHAKE</div>
+        <div class="toggle-wrap">
+          <div class="toggle active" id="toggle-shake" onclick="Settings.toggle('shake')"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        // Scroll reveal
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
+<!-- HOW TO PLAY -->
+<div id="screen-howto" class="screen">
+  <div class="screen-inner howto-inner">
+    <div class="screen-header">
+      <button class="btn-back" onclick="UI.showScreen('screen-home')">← BACK</button>
+      <h2 class="screen-title">HOW TO PLAY</h2>
+    </div>
+    <div class="howto-content">
+      <div class="howto-section">
+        <div class="howto-title">🎯 OBJECTIVE</div>
+        <p>Capture energy cores and eliminate enemies. First team to <strong>100 points</strong> wins. Each core = 10 pts, each kill = 5 pts.</p>
+      </div>
+      <div class="howto-section">
+        <div class="howto-title">🎮 CONTROLS</div>
+        <div class="controls-grid">
+          <div class="ctrl"><kbd>WASD</kbd> Move</div>
+          <div class="ctrl"><kbd>Mouse</kbd> Aim</div>
+          <div class="ctrl"><kbd>LMB / Space</kbd> Shoot</div>
+          <div class="ctrl"><kbd>Q</kbd> Quantum Dash</div>
+          <div class="ctrl"><kbd>E</kbd> Time Freeze</div>
+          <div class="ctrl"><kbd>R</kbd> Energy Pulse</div>
+          <div class="ctrl"><kbd>F</kbd> Shield Barrier</div>
+          <div class="ctrl"><kbd>TAB</kbd> Scoreboard</div>
+        </div>
+      </div>
+      <div class="howto-section">
+        <div class="howto-title">⚡ ABILITIES</div>
+        <div class="ability-list">
+          <div class="ability-entry"><span class="ab-icon">⚡</span><div><strong>QUANTUM DASH</strong> — Teleport forward instantly. Cost: 20 energy</div></div>
+          <div class="ability-entry"><span class="ab-icon">❄</span><div><strong>TIME FREEZE</strong> — Slow all nearby enemies. Cost: 35 energy</div></div>
+          <div class="ability-entry"><span class="ab-icon">◎</span><div><strong>ENERGY PULSE</strong> — 8-directional burst attack. Cost: 30 energy</div></div>
+          <div class="ability-entry"><span class="ab-icon">🛡</span><div><strong>SHIELD BARRIER</strong> — Block 80% damage for 4s. Cost: 25 energy</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, observerOptions);
+<!-- NOTIFICATION TOAST -->
+<div id="toast" class="toast hidden"></div>
 
-        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+<!-- Scripts -->
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
 
-        // Navbar scroll effect
-        const navbar = document.querySelector('.navbar');
-        let lastScroll = 0;
-        window.addEventListener('scroll', () => {
-            const currentScroll = window.pageYOffset;
-            if (currentScroll > 50) {
-                navbar.style.background = 'rgba(5, 5, 16, 0.9)';
-                navbar.style.boxShadow = '0 10px 40px rgba(0,0,0,0.3)';
-            } else {
-                navbar.style.background = 'rgba(5, 5, 16, 0.7)';
-                navbar.style.boxShadow = 'none';
-            }
-            lastScroll = currentScroll;
-        }, { passive: true });
+<script src="js/audio.js"></script>
+<script src="js/renderer.js"></script>
 
-        // Live player counter simulation (very light)
-        const statPlayers = document.getElementById('stat-players');
-        if (statPlayers) {
-            let basePlayers = 2847;
-            setInterval(() => {
-                const change = Math.floor(Math.random() * 7) - 3;
-                basePlayers = Math.max(2000, basePlayers + change);
-                statPlayers.textContent = basePlayers.toLocaleString();
-            }, 3000);
-        }
+<script src="js/settings.js"></script>
 
-        // Smooth scroll for nav links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-    </script>
+<script src="js/input.js"></script>
+<script src="js/mobile.js"></script>
+
+<script src="js/network.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+
+<script src="js/main.js"></script>
 </body>
 </html>
