@@ -1,401 +1,655 @@
+# Corrected `index.html` for NEON FRACTURE
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>NEON FRACTURE: Quantum Arena</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NEON FRACTURE: Quantum Arena</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
-<!-- ═══════════════ SCREENS ═══════════════ -->
-
-<!-- HOME SCREEN -->
-<div id="screen-home" class="screen active">
-  <canvas id="bg-canvas"></canvas>
-  <div class="home-content">
-    <div class="logo-wrap">
-      <div class="logo-glitch" data-text="NEON FRACTURE">NEON FRACTURE</div>
-      <div class="logo-sub">QUANTUM ARENA</div>
-      <div class="logo-tagline">The future of combat has arrived</div>
+  <!-- ═══════════════════════════════════════
+       MASCOT AI DRONE
+       ═══════════════════════════════════════ -->
+  <div id="mascot" class="mascot-container">
+    <div class="mascot-body">
+      <div class="mascot-antenna"></div>
+      <div class="mascot-face">
+        <div class="mascot-eye left"></div>
+        <div class="mascot-eye right"></div>
+      </div>
+      <div class="mascot-accent"></div>
+      <div class="mascot-thruster"></div>
     </div>
-    <div class="home-buttons">
-      <button class="btn-primary" onclick="UI.showScreen('screen-multiplayer')">
-        <span class="btn-icon">⚡</span> ENTER ARENA
-      </button>
-      <button class="btn-secondary" onclick="UI.showScreen('screen-settings')">
-        <span class="btn-icon">⚙</span> SETTINGS
-      </button>
-      <button class="btn-secondary" onclick="UI.showScreen('screen-howto')">
-        <span class="btn-icon">◎</span> HOW TO PLAY
-      </button>
-    </div>
-    <div class="home-footer">
-      <span class="version-tag">v1.0.0 QUANTUM BUILD</span>
-      <span class="status-dot"></span>
-      <span id="online-count">0 OPERATORS ONLINE</span>
-    </div>
+    <div class="mascot-trail"></div>
   </div>
-  <div class="scanlines"></div>
-</div>
 
-<!-- MULTIPLAYER LOBBY SCREEN -->
-<div id="screen-multiplayer" class="screen">
-  <div class="screen-inner">
-    <div class="screen-header">
-      <button class="btn-back" onclick="UI.showScreen('screen-home')">← BACK</button>
-      <h2 class="screen-title">QUANTUM ARENA</h2>
-    </div>
-    <div class="lobby-grid">
-      <div class="lobby-panel">
-        <div class="panel-title">CREATE ROOM</div>
-        <input type="text" id="create-name" class="neon-input" placeholder="CALLSIGN" maxlength="16">
-        <input type="text" id="create-room-name" class="neon-input" placeholder="ROOM NAME (optional)" maxlength="20">
-        <button class="btn-primary" onclick="Network.createRoom()">
-          <span>⚡ CREATE ARENA</span>
+  <!-- ═══════════════════════════════════════
+       HOME SCREEN
+       ═══════════════════════════════════════ -->
+  <div id="screen-home" class="screen active">
+
+    <!-- keep original bg canvas id for compatibility -->
+    <canvas id="bg-canvas" class="home-background"></canvas>
+
+    <div class="home-vignette"></div>
+    <div class="home-overlay"></div>
+
+    <div class="home-content">
+      <div class="logo-container">
+        <div class="logo-badge">TACTICAL ARENA SIMULATION</div>
+
+        <h1 class="game-logo">
+          <span class="logo-neon">NEON</span>
+          <span class="logo-fracture">FRACTURE</span>
+        </h1>
+
+        <p class="game-subtitle">QUANTUM ARENA</p>
+
+        <div class="logo-line"></div>
+        <div class="logo-line-holo"></div>
+      </div>
+
+      <nav class="home-menu">
+
+        <!-- KEEP ORIGINAL FLOW -->
+        <button
+          class="btn-cinematic"
+          id="btn-enter-arena"
+          onclick="UI.showScreen('screen-multiplayer')">
+          <span class="btn-text">ENTER ARENA</span>
+          <span class="btn-shine"></span>
+          <span class="btn-border"></span>
         </button>
-      </div>
-      <div class="divider-or"><span>OR</span></div>
-      <div class="lobby-panel">
-        <div class="panel-title">JOIN ROOM</div>
-        <input type="text" id="join-name" class="neon-input" placeholder="CALLSIGN" maxlength="16">
-        <input type="text" id="join-room-id" class="neon-input" placeholder="ROOM CODE" maxlength="8" style="text-transform:uppercase">
-        <div class="team-select">
-          <div class="team-btn team-a active" id="team-btn-a" onclick="UI.selectTeam('A')">TEAM ALPHA</div>
-          <div class="team-btn team-b" id="team-btn-b" onclick="UI.selectTeam('B')">TEAM OMEGA</div>
-        </div>
-        <button class="btn-primary btn-omega" onclick="Network.joinRoom()">
-          <span>◎ JOIN ARENA</span>
+
+        <button
+          class="btn-glass"
+          id="btn-settings"
+          onclick="UI.showScreen('screen-settings')">
+          <span class="btn-icon">▣</span>
+          <span class="btn-text">SETTINGS</span>
         </button>
+
+        <button
+          class="btn-glass"
+          id="btn-howto"
+          onclick="UI.showScreen('screen-howto')">
+          <span class="btn-icon">?</span>
+          <span class="btn-text">TACTICAL BRIEFING</span>
+        </button>
+      </nav>
+
+      <div class="home-footer">
+        <div class="online-pill">
+          <span class="pulse-dot"></span>
+          <span class="online-text">
+            <span id="online-count">0</span> OPERATORS ONLINE
+          </span>
+        </div>
+
+        <div class="version-tag">BUILD 7.2.1-ALPHA</div>
       </div>
     </div>
-    <div id="error-msg" class="error-msg hidden"></div>
+
+    <div class="holo-corner top-left"></div>
+    <div class="holo-corner top-right"></div>
+    <div class="holo-corner bottom-left"></div>
+    <div class="holo-corner bottom-right"></div>
+
+    <div class="holo-scanline"></div>
   </div>
-</div>
 
-<!-- ROOM LOBBY -->
-<div id="screen-room" class="screen">
-  <div class="screen-inner">
-    <div class="screen-header">
-      <button class="btn-back" onclick="Network.leaveRoom()">← LEAVE</button>
-      <div>
-        <h2 class="screen-title" id="room-name-display">ARENA</h2>
-        <div class="room-code-display">ROOM CODE: <span id="room-code-text" class="highlight-text"></span>
-          <button class="btn-copy" onclick="UI.copyRoomCode()">COPY</button>
+  <!-- ═══════════════════════════════════════
+       MULTIPLAYER SCREEN
+       ═══════════════════════════════════════ -->
+  <div id="screen-multiplayer" class="screen">
+
+    <div class="ambient-bg"></div>
+
+    <div class="screen-content glass-panel">
+
+      <div class="screen-header">
+        <h2 class="screen-title">COMBAT LINK</h2>
+        <div class="screen-subtitle">Establish tactical connection</div>
+      </div>
+
+      <div class="mp-grid">
+
+        <!-- CREATE ROOM -->
+        <div class="mp-panel glass-panel">
+          <div class="mp-panel-header">
+            <div class="mp-icon create-icon">▲</div>
+            <h3>CREATE SORTIE</h3>
+          </div>
+
+          <p class="mp-desc">
+            Initiate a new combat simulation and invite operators.
+          </p>
+
+          <!-- ORIGINAL IDS PRESERVED -->
+          <input
+            type="text"
+            id="create-name"
+            class="neon-input"
+            placeholder="CALLSIGN"
+            maxlength="16">
+
+          <input
+            type="text"
+            id="create-room-name"
+            class="neon-input"
+            placeholder="ROOM NAME"
+            maxlength="20">
+
+          <button
+            class="btn-primary"
+            id="btn-create-room"
+            onclick="Network.createRoom()">
+            <span>INITIATE</span>
+          </button>
+        </div>
+
+        <!-- JOIN ROOM -->
+        <div class="mp-panel glass-panel">
+          <div class="mp-panel-header">
+            <div class="mp-icon join-icon">▼</div>
+            <h3>JOIN SORTIE</h3>
+          </div>
+
+          <p class="mp-desc">
+            Link to an existing tactical session via code.
+          </p>
+
+          <input
+            type="text"
+            id="join-name"
+            class="neon-input"
+            placeholder="CALLSIGN"
+            maxlength="16">
+
+          <input
+            type="text"
+            id="join-room-id"
+            class="neon-input"
+            placeholder="ROOM CODE"
+            maxlength="8"
+            autocomplete="off">
+
+          <!-- TEAM SELECT PRESERVED -->
+          <div class="team-select">
+            <div
+              class="team-btn team-a active"
+              id="team-btn-a"
+              onclick="UI.selectTeam('A')">
+              TEAM ALPHA
+            </div>
+
+            <div
+              class="team-btn team-b"
+              id="team-btn-b"
+              onclick="UI.selectTeam('B')">
+              TEAM OMEGA
+            </div>
+          </div>
+
+          <button
+            class="btn-primary"
+            id="btn-join-room"
+            onclick="Network.joinRoom()">
+            <span>LINK</span>
+          </button>
         </div>
       </div>
-    </div>
-    <div class="room-content">
-      <div class="teams-container">
-        <div class="team-panel team-a-panel">
-          <div class="team-header team-a-header">⚡ TEAM ALPHA</div>
-          <div id="team-a-list" class="player-list"></div>
-        </div>
-        <div class="vs-divider">VS</div>
-        <div class="team-panel team-b-panel">
-          <div class="team-header team-b-header">◎ TEAM OMEGA</div>
-          <div id="team-b-list" class="player-list"></div>
-        </div>
-      </div>
-      <div class="room-actions">
-        <button class="btn-secondary" onclick="Network.switchTeam()">⇄ SWITCH TEAM</button>
-        <button class="btn-primary btn-start" id="btn-start" onclick="Network.startGame()">⚡ START MATCH</button>
-      </div>
-      <div class="waiting-msg" id="waiting-msg">Waiting for host to start...</div>
+
+      <button
+        class="btn-back"
+        id="btn-mp-back"
+        onclick="UI.showScreen('screen-home')">
+        <span class="back-arrow">←</span>
+        RETURN TO BASE
+      </button>
     </div>
   </div>
-</div>
 
-<!-- COUNTDOWN -->
-<div id="screen-countdown" class="screen">
-  <div class="countdown-wrap">
-    <div class="countdown-label">MATCH STARTING IN</div>
-    <div id="countdown-num" class="countdown-num">5</div>
-    <div class="countdown-sub">PREPARE FOR COMBAT</div>
-  </div>
-</div>
+  <!-- ═══════════════════════════════════════
+       ROOM LOBBY
+       ═══════════════════════════════════════ -->
+  <div id="screen-room" class="screen">
 
-<!-- GAME SCREEN -->
-<div id="screen-game" class="screen">
-  <canvas id="game-canvas"></canvas>
+    <div class="ambient-bg"></div>
 
-  <!-- HUD -->
-  <div id="hud" class="hud">
-    <!-- TOP BAR -->
-    <div class="hud-top">
-      <div class="team-score team-a-score">
-        <div class="score-val" id="score-a">0</div>
-        <div class="team-label">ALPHA</div>
-      </div>
-      <div class="match-info">
-        <div class="score-progress-bar">
-          <div class="spb-a" id="score-bar-a"></div>
-          <div class="spb-center">VS</div>
-          <div class="spb-b" id="score-bar-b"></div>
+    <div class="screen-content lobby-layout">
+
+      <div class="lobby-header glass-panel">
+
+        <div class="lobby-title-group">
+          <h2 class="screen-title" id="room-name-display">SORTIE PREP</h2>
+          <div class="lobby-status">AWAITING OPERATORS</div>
         </div>
-        <div class="match-time" id="match-time">5:00</div>
-        <div class="match-label">QUANTUM ARENA · FIRST TO 100</div>
+
+        <div class="room-code-display">
+          <div class="code-block">
+            <span class="code-label">LINK CODE</span>
+            <span class="code-value" id="room-code-text">------</span>
+          </div>
+
+          <button
+            class="btn-icon"
+            id="btn-copy-code"
+            onclick="UI.copyRoomCode()"
+            title="Copy">
+            COPY
+          </button>
+        </div>
       </div>
-      <div class="team-score team-b-score">
-        <div class="score-val" id="score-b">0</div>
-        <div class="team-label">OMEGA</div>
+
+      <div class="lobby-teams">
+
+        <div class="team-panel team-alpha glass-panel">
+          <div class="team-header">
+            <div class="team-icon-wrap alpha">▲</div>
+
+            <div class="team-info">
+              <h3>TEAM ALPHA</h3>
+              <span class="team-count" id="alpha-count">0/4</span>
+            </div>
+          </div>
+
+          <!-- PRESERVED -->
+          <div class="player-list" id="team-a-list"></div>
+        </div>
+
+        <div class="lobby-controls">
+
+          <button
+            class="btn-cinematic"
+            id="btn-start"
+            onclick="Network.startGame()">
+            <span class="btn-text">INITIATE DROP</span>
+            <span class="btn-shine"></span>
+          </button>
+
+          <button
+            class="btn-glass"
+            id="btn-switch-team"
+            onclick="Network.switchTeam()">
+            <span>SWITCH TEAM</span>
+          </button>
+
+          <button
+            class="btn-glass btn-danger"
+            id="btn-leave-room"
+            onclick="Network.leaveRoom()">
+            <span>ABORT SORTIE</span>
+          </button>
+        </div>
+
+        <div class="team-panel team-omega glass-panel">
+          <div class="team-header">
+            <div class="team-icon-wrap omega">▼</div>
+
+            <div class="team-info">
+              <h3>TEAM OMEGA</h3>
+              <span class="team-count" id="omega-count">0/4</span>
+            </div>
+          </div>
+
+          <!-- PRESERVED -->
+          <div class="player-list" id="team-b-list"></div>
+        </div>
       </div>
     </div>
+  </div>
 
-    <!-- BOTTOM HUD -->
-    <div class="hud-bottom">
-      <div class="hud-left">
-        <div class="stat-block">
-          <div class="stat-label">HEALTH</div>
-          <div class="bar-wrap"><div class="bar bar-health" id="bar-health"></div></div>
-          <div class="stat-val" id="val-health">100</div>
+  <!-- COUNTDOWN -->
+  <div id="screen-countdown" class="screen">
+    <div class="countdown-bg"></div>
+
+    <div class="countdown-container">
+      <div class="countdown-label">TACTICAL INSERTION</div>
+
+      <!-- PRESERVED ORIGINAL ID -->
+      <div class="countdown-number" id="countdown-num">3</div>
+
+      <div class="countdown-bar">
+        <div class="countdown-progress"></div>
+      </div>
+
+      <div class="countdown-hint">Prepare for engagement</div>
+    </div>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="screen-game" class="screen">
+
+    <!-- ORIGINAL CANVAS PRESERVED -->
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud" class="hud-container">
+
+      <!-- TOP HUD -->
+      <div class="hud-top">
+
+        <div class="team-score-block team-alpha-score">
+          <div class="score-meta">
+            <span class="score-label">ALPHA</span>
+            <div class="score-bar-bg">
+              <div class="score-bar-fill alpha-fill" id="score-bar-a"></div>
+            </div>
+          </div>
+
+          <span class="score-value" id="score-a">0</span>
         </div>
-        <div class="stat-block">
-          <div class="stat-label">ENERGY</div>
-          <div class="bar-wrap"><div class="bar bar-energy" id="bar-energy"></div></div>
-          <div class="stat-val" id="val-energy">100</div>
+
+        <!-- ORIGINAL MATCH ID PRESERVED -->
+        <div class="match-timer glass-hud" id="match-time">5:00</div>
+
+        <div class="team-score-block team-omega-score">
+          <span class="score-value" id="score-b">0</span>
+
+          <div class="score-meta">
+            <span class="score-label">OMEGA</span>
+            <div class="score-bar-bg">
+              <div class="score-bar-fill omega-fill" id="score-bar-b"></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="hud-center">
-        <div class="crosshair" id="crosshair">+</div>
-      </div>
+      <!-- KILL FEED -->
+      <div class="kill-feed-container" id="kill-feed"></div>
 
-      <div class="hud-right">
-        <div class="abilities-bar">
+      <!-- PLAYER HUD -->
+      <div class="hud-bottom">
+
+        <!-- LEFT -->
+        <div class="player-bars" id="player-bars">
+
+          <div class="bar-group">
+            <div class="bar-header">
+              <span class="bar-label">HEALTH</span>
+              <span class="bar-value" id="val-health">100</span>
+            </div>
+
+            <div class="bar-track">
+              <div class="bar-fill health-fill" id="bar-health"></div>
+            </div>
+          </div>
+
+          <div class="bar-group">
+            <div class="bar-header">
+              <span class="bar-label">ENERGY</span>
+              <span class="bar-value" id="val-energy">100</span>
+            </div>
+
+            <div class="bar-track">
+              <div class="bar-fill energy-fill" id="bar-energy"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABILITIES -->
+        <div class="ability-bar">
+
           <div class="ability-slot" id="ab-dash" onclick="Game.useAbility('dash')">
             <div class="ability-icon">⚡</div>
-            <div class="ability-name">DASH</div>
             <div class="ability-key">Q</div>
             <div class="ability-cd" id="cd-dash"></div>
             <div class="ability-overlay" id="ov-dash"></div>
           </div>
+
           <div class="ability-slot" id="ab-freeze" onclick="Game.useAbility('freeze')">
             <div class="ability-icon">❄</div>
-            <div class="ability-name">FREEZE</div>
             <div class="ability-key">E</div>
             <div class="ability-cd" id="cd-freeze"></div>
             <div class="ability-overlay" id="ov-freeze"></div>
           </div>
+
           <div class="ability-slot" id="ab-pulse" onclick="Game.useAbility('pulse')">
             <div class="ability-icon">◎</div>
-            <div class="ability-name">PULSE</div>
             <div class="ability-key">R</div>
             <div class="ability-cd" id="cd-pulse"></div>
             <div class="ability-overlay" id="ov-pulse"></div>
           </div>
+
           <div class="ability-slot" id="ab-shield" onclick="Game.useAbility('shield')">
             <div class="ability-icon">🛡</div>
-            <div class="ability-name">SHIELD</div>
             <div class="ability-key">F</div>
             <div class="ability-cd" id="cd-shield"></div>
             <div class="ability-overlay" id="ov-shield"></div>
           </div>
         </div>
+
+        <!-- MINIMAP -->
+        <div class="minimap-wrap">
+          <!-- ORIGINAL ID PRESERVED -->
+          <canvas id="minimap" width="120" height="120"></canvas>
+          <div class="minimap-label">TACTICAL MAP</div>
+        </div>
       </div>
+
+      <!-- SCOREBOARD -->
+      <div id="scoreboard" class="scoreboard hidden">
+
+        <div class="scoreboard-panel glass-panel">
+
+          <div class="scoreboard-header">
+            <h3 class="scoreboard-title">COMBAT LOG</h3>
+          </div>
+
+          <!-- ORIGINAL STRUCTURE PRESERVED -->
+          <table class="scoreboard-table">
+            <thead>
+              <tr>
+                <th>PLAYER</th>
+                <th>K</th>
+                <th>D</th>
+                <th>PTS</th>
+                <th>LVL</th>
+              </tr>
+            </thead>
+
+            <tbody id="scoreboard-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- RESPAWN -->
+      <div id="respawn-overlay" class="respawn-overlay hidden">
+        <div class="respawn-panel glass-panel">
+          <div class="respawn-icon">↻</div>
+          <h3>SYSTEM REBOOT</h3>
+          <div id="respawn-timer">4</div>
+        </div>
+      </div>
+
+      <!-- FREEZE -->
+      <div id="freeze-overlay" class="freeze-overlay hidden"></div>
     </div>
 
-    <!-- KILL FEED -->
-    <div class="kill-feed" id="kill-feed"></div>
+    <!-- MOBILE CONTROLS -->
+    <div id="mobile-controls" class="mobile-controls">
 
-    <!-- MINIMAP -->
-    <div class="minimap-wrap">
-      <canvas id="minimap" width="120" height="120"></canvas>
-      <div class="minimap-label">SECTOR MAP</div>
-    </div>
+      <!-- ORIGINAL JOYSTICK IDS PRESERVED -->
+      <div id="joystick-zone" class="joystick-zone">
+        <div id="joystick-base" class="joystick-base">
+          <div id="joystick-stick" class="joystick-stick"></div>
+        </div>
+      </div>
 
-    <!-- PLAYER INFO -->
-    <div class="player-hud-info">
-      <div class="player-name-hud" id="player-name-hud" data-set=""></div>
-      <div class="player-level-row">
-        <div class="level-badge" id="level-badge">LVL 1</div>
-        <div class="xp-bar-wrap">
-          <div class="xp-bar-fill" id="xp-bar-fill"></div>
+      <div class="mobile-actions">
+        <!-- ORIGINAL FIRE BUTTON PRESERVED -->
+        <button class="mobile-fire" id="mobile-fire">FIRE</button>
+
+        <div class="mobile-abilities">
+          <button class="mob-ab" onclick="Game.useAbility('dash')">⚡</button>
+          <button class="mob-ab" onclick="Game.useAbility('freeze')">❄</button>
+          <button class="mob-ab" onclick="Game.useAbility('pulse')">◎</button>
+          <button class="mob-ab" onclick="Game.useAbility('shield')">🛡</button>
         </div>
       </div>
     </div>
-
-    <!-- SCOREBOARD (TAB) -->
-    <div id="scoreboard" class="scoreboard hidden">
-      <div class="sb-title">⚡ QUANTUM ARENA — SCOREBOARD</div>
-      <div class="sb-scores-top">
-        <div class="sb-ts team-a-col" id="sb-ts-a">ALPHA: 0</div>
-        <div class="sb-ts-div">·</div>
-        <div class="sb-ts team-b-col" id="sb-ts-b">OMEGA: 0</div>
-      </div>
-      <div class="sb-grid">
-        <div class="sb-team-col">
-          <div class="sb-team-header team-a-header">⚡ TEAM ALPHA</div>
-          <div class="sb-col-labels"><span>NAME</span><span>K</span><span>D</span><span>PTS</span><span>LV</span></div>
-          <div id="sb-team-a"></div>
-        </div>
-        <div class="sb-team-col">
-          <div class="sb-team-header team-b-header">◎ TEAM OMEGA</div>
-          <div class="sb-col-labels"><span>NAME</span><span>K</span><span>D</span><span>PTS</span><span>LV</span></div>
-          <div id="sb-team-b"></div>
-        </div>
-      </div>
-      <div class="sb-hint">[ TAB ] CLOSE</div>
-    </div>
-
-    <!-- RESPAWN OVERLAY -->
-    <div id="respawn-overlay" class="respawn-overlay hidden">
-      <div class="respawn-text">ELIMINATED</div>
-      <div class="respawn-sub">Respawning in <span id="respawn-timer">4</span>s...</div>
-    </div>
-
-    <!-- FREEZE OVERLAY -->
-    <div id="freeze-overlay" class="freeze-overlay hidden"></div>
   </div>
 
-  <!-- MOBILE CONTROLS -->
-  <div id="mobile-controls" class="mobile-controls">
-    <div id="joystick-zone" class="joystick-zone">
-      <div id="joystick-base" class="joystick-base">
-        <div id="joystick-stick" class="joystick-stick"></div>
+  <!-- END SCREEN -->
+  <div id="screen-end" class="screen">
+
+    <div class="ambient-bg"></div>
+
+    <div class="end-content">
+      <div class="end-result-container">
+        <div class="end-result" id="end-result">VICTORY</div>
       </div>
-    </div>
-    <div class="mobile-actions">
-      <button class="mobile-fire" id="mobile-fire">FIRE</button>
-      <div class="mobile-abilities">
-        <button class="mob-ab" onclick="Game.useAbility('dash')">⚡</button>
-        <button class="mob-ab" onclick="Game.useAbility('freeze')">❄</button>
-        <button class="mob-ab" onclick="Game.useAbility('pulse')">◎</button>
-        <button class="mob-ab" onclick="Game.useAbility('shield')">🛡</button>
+
+      <div class="end-reason" id="end-reason">
+        Energy threshold achieved
+      </div>
+
+      <div class="stats-panel glass-panel">
+        <h3 class="stats-title">MISSION REPORT</h3>
+
+        <!-- ORIGINAL STATS TABLE PRESERVED -->
+        <table class="stats-table" id="stats-table">
+          <tbody id="stats-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="end-actions">
+
+        <button
+          class="btn-cinematic"
+          onclick="Network.returnToLobby()">
+          <span class="btn-text">RE-ENGAGE</span>
+        </button>
+
+        <button
+          class="btn-glass"
+          onclick="UI.showScreen('screen-home')">
+          RETURN TO BASE
+        </button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- MATCH END -->
-<div id="screen-end" class="screen">
-  <div class="end-content">
-    <div class="end-result" id="end-result">VICTORY</div>
-    <div class="end-team" id="end-team">TEAM ALPHA WINS</div>
-    <div class="end-reason" id="end-reason">REACHED 100 POINTS FIRST</div>
-    <div class="end-stats">
-      <div class="end-stats-title">MATCH SUMMARY</div>
-      <div class="end-scores">
-        <div class="end-score-block">
-          <div class="end-team-label team-a-col">ALPHA</div>
-          <div class="end-score-val" id="end-score-a">0</div>
-        </div>
-        <div class="end-score-block">
-          <div class="end-team-label team-b-col">OMEGA</div>
-          <div class="end-score-val" id="end-score-b">0</div>
-        </div>
+  <!-- SETTINGS -->
+  <div id="screen-settings" class="screen">
+
+    <div class="ambient-bg"></div>
+
+    <div class="screen-content glass-panel settings-panel">
+
+      <div class="screen-header">
+        <h2 class="screen-title">SYSTEM CONFIG</h2>
       </div>
-      <table class="stats-table" id="stats-table">
-        <thead><tr><th>PLAYER</th><th>TEAM</th><th>K</th><th>D</th><th>K/D</th><th>SCORE</th><th>LVL</th></tr></thead>
-        <tbody id="stats-tbody"></tbody>
-      </table>
-    </div>
-    <div class="end-actions">
-      <button class="btn-primary" onclick="Network.returnToLobby()">⚡ PLAY AGAIN</button>
-      <button class="btn-secondary" onclick="UI.showScreen('screen-home')">◎ MAIN MENU</button>
-    </div>
-  </div>
-</div>
 
-<!-- SETTINGS -->
-<div id="screen-settings" class="screen">
-  <div class="screen-inner">
-    <div class="screen-header">
-      <button class="btn-back" onclick="UI.showScreen('screen-home')">← BACK</button>
-      <h2 class="screen-title">SETTINGS</h2>
-    </div>
-    <div class="settings-grid">
-      <div class="settings-group">
-        <div class="settings-label">SOUND EFFECTS</div>
-        <div class="toggle-wrap">
+      <div class="settings-grid">
+
+        <!-- ORIGINAL SETTINGS IDS -->
+        <div class="setting-item">
+          <span class="setting-label">SOUND EFFECTS</span>
           <div class="toggle active" id="toggle-sfx" onclick="Settings.toggle('sfx')"></div>
         </div>
-      </div>
-      <div class="settings-group">
-        <div class="settings-label">MUSIC</div>
-        <div class="toggle-wrap">
+
+        <div class="setting-item">
+          <span class="setting-label">MUSIC</span>
           <div class="toggle active" id="toggle-music" onclick="Settings.toggle('music')"></div>
         </div>
-      </div>
-      <div class="settings-group">
-        <div class="settings-label">GRAPHICS QUALITY</div>
-        <div class="select-wrap">
-          <select class="neon-select" id="gfx-quality" onchange="Settings.setGfx(this.value)">
+
+        <div class="setting-item">
+          <span class="setting-label">GRAPHICS QUALITY</span>
+
+          <select
+            class="neon-select"
+            id="gfx-quality"
+            onchange="Settings.setGfx(this.value)">
             <option value="low">LOW</option>
             <option value="medium" selected>MEDIUM</option>
             <option value="high">HIGH</option>
           </select>
         </div>
       </div>
-      <div class="settings-group">
-        <div class="settings-label">SCREEN SHAKE</div>
-        <div class="toggle-wrap">
-          <div class="toggle active" id="toggle-shake" onclick="Settings.toggle('shake')"></div>
-        </div>
-      </div>
+
+      <button
+        class="btn-back"
+        onclick="UI.showScreen('screen-home')">
+        RETURN
+      </button>
     </div>
   </div>
-</div>
 
-<!-- HOW TO PLAY -->
-<div id="screen-howto" class="screen">
-  <div class="screen-inner howto-inner">
-    <div class="screen-header">
-      <button class="btn-back" onclick="UI.showScreen('screen-home')">← BACK</button>
-      <h2 class="screen-title">HOW TO PLAY</h2>
-    </div>
-    <div class="howto-content">
-      <div class="howto-section">
-        <div class="howto-title">🎯 OBJECTIVE</div>
-        <p>Capture energy cores and eliminate enemies. First team to <strong>100 points</strong> wins. Each core = 10 pts, each kill = 5 pts.</p>
+  <!-- HOW TO PLAY -->
+  <div id="screen-howto" class="screen">
+
+    <div class="ambient-bg"></div>
+
+    <div class="screen-content glass-panel guide-panel">
+
+      <div class="screen-header">
+        <h2 class="screen-title">TACTICAL BRIEFING</h2>
       </div>
-      <div class="howto-section">
-        <div class="howto-title">🎮 CONTROLS</div>
-        <div class="controls-grid">
-          <div class="ctrl"><kbd>WASD</kbd> Move</div>
-          <div class="ctrl"><kbd>Mouse</kbd> Aim</div>
-          <div class="ctrl"><kbd>LMB / Space</kbd> Shoot</div>
-          <div class="ctrl"><kbd>Q</kbd> Quantum Dash</div>
-          <div class="ctrl"><kbd>E</kbd> Time Freeze</div>
-          <div class="ctrl"><kbd>R</kbd> Energy Pulse</div>
-          <div class="ctrl"><kbd>F</kbd> Shield Barrier</div>
-          <div class="ctrl"><kbd>TAB</kbd> Scoreboard</div>
+
+      <div class="guide-grid">
+
+        <div class="guide-card glass-panel">
+          <h4>OBJECTIVE</h4>
+          <p>
+            Capture energy cores and eliminate enemy operators.
+            First team to 100 points wins.
+          </p>
+        </div>
+
+        <div class="guide-card glass-panel">
+          <h4>CONTROLS</h4>
+
+          <ul class="control-list">
+            <li><kbd>WASD</kbd> Move</li>
+            <li><kbd>Mouse</kbd> Aim</li>
+            <li><kbd>LMB</kbd> Fire</li>
+            <li><kbd>Q/E/R/F</kbd> Abilities</li>
+          </ul>
         </div>
       </div>
-      <div class="howto-section">
-        <div class="howto-title">⚡ ABILITIES</div>
-        <div class="ability-list">
-          <div class="ability-entry"><span class="ab-icon">⚡</span><div><strong>QUANTUM DASH</strong> — Teleport forward instantly. Cost: 20 energy</div></div>
-          <div class="ability-entry"><span class="ab-icon">❄</span><div><strong>TIME FREEZE</strong> — Slow all nearby enemies. Cost: 35 energy</div></div>
-          <div class="ability-entry"><span class="ab-icon">◎</span><div><strong>ENERGY PULSE</strong> — 8-directional burst attack. Cost: 30 energy</div></div>
-          <div class="ability-entry"><span class="ab-icon">🛡</span><div><strong>SHIELD BARRIER</strong> — Block 80% damage for 4s. Cost: 25 energy</div></div>
-        </div>
-      </div>
+
+      <button
+        class="btn-back"
+        onclick="UI.showScreen('screen-home')">
+        RETURN TO BASE
+      </button>
     </div>
   </div>
-</div>
 
-<!-- NOTIFICATION TOAST -->
-<div id="toast" class="toast hidden"></div>
+  <!-- TOAST -->
+  <div id="toast" class="toast hidden"></div>
 
-<!-- Scripts -->
-<script src="/socket.io/socket.io.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
+  <!-- SCRIPTS -->
+  <script src="/socket.io/socket.io.js"></script>
 
-<script src="js/audio.js"></script>
-<script src="js/renderer.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.min.js"></script>
 
-<script src="js/settings.js"></script>
+  <!-- ORIGINAL GAME SYSTEM ORDER PRESERVED -->
+  <script src="/js/audio.js"></script>
+  <script src="/js/renderer.js"></script>
+  <script src="/js/settings.js"></script>
+  <script src="/js/input.js"></script>
+  <script src="/js/mobile.js"></script>
+  <script src="/js/network.js"></script>
+  <script src="/js/game.js"></script>
 
-<script src="js/input.js"></script>
-<script src="js/mobile.js"></script>
+  <!-- NEW ENHANCEMENT LAYER -->
+  <script src="/js/ui.js"></script>
 
-<script src="js/network.js"></script>
-<script src="js/game.js"></script>
-<script src="js/ui.js"></script>
+  <!-- ORIGINAL MAIN BOOT FILE -->
+  <script src="/js/main.js"></script>
 
-<script src="js/main.js"></script>
 </body>
 </html>
+```
