@@ -3,10 +3,6 @@
 #### *Fast-Paced Competitive Arena Shooter Built for the Web*
 
 <p align="center">
-  <img src="docs/assets/banner-placeholder.png" alt="Neon Fracture Banner" width="100%" />
-</p>
-
-<p align="center">
 
 ![Status](https://img.shields.io/badge/status-Active%20Development-orange?style=for-the-badge)
 ![Game](https://img.shields.io/badge/game-Real--Time%20Multiplayer-purple?style=for-the-badge)
@@ -679,5 +675,5 @@ It showcases:
 ---
 
 <p align="center">
-  <strong>Neon Fracture — Fast. Competitive. Real-Time.</strong>
+  <strong>Neon Fracture — Made with ❤️ by Apratim Das.</strong>
 </p>
