@@ -1,5 +1,5 @@
 # Neon Fracture ⚡
-### *Quantum Arena — Real-Time Multiplayer Browser Combat*
+### *Quantum Arena — Real Time Multiplayer Browser Based Game*
 #### *Fast-Paced Competitive Arena Shooter Built for the Web*
 
 <p align="center">
